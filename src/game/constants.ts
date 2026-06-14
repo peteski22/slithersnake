@@ -33,4 +33,5 @@ export const BOOST_MULTIPLIER = 1.8;  // speed multiplier while boosting
 export const BOOST_DROP_INTERVAL = 0.15; // seconds between dropped pellets while boosting
 
 // Spawn
-export const SPAWN_GRACE_TICKS = 300; // ~5s invulnerability at spawn (60fps): body "grows out" and you can escape if you spawned on someone
+export const SPAWN_GRACE_TICKS = 300;   // ~5s invulnerability at spawn (60fps): body "grows out" and you can escape if you spawned on someone
+export const MIN_SPAWN_DISTANCE = 350;  // a new snake must spawn at least this far from every living snake's head

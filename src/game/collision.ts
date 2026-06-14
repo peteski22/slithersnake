@@ -20,7 +20,8 @@ const HEAD_CONE_COS = 0.25;
 export function headHitsSnake(attacker: Snake, victim: Snake): boolean {
   if (!attacker.alive || !victim.alive) return false;
   const headPos = attacker.segments[0];
-  const hitDist = snakeRadius(attacker) * 0.6 + snakeRadius(victim) * 0.6;
+  // Require fairly central overlap (not just edges grazing) before it counts as a hit.
+  const hitDist = snakeRadius(attacker) * 0.4 + snakeRadius(victim) * 0.4;
   const startIndex = attacker === victim ? SELF_SKIP : 0;
   // broad-phase: skip distant snakes cheaply
   if (attacker !== victim) {
@@ -39,8 +40,12 @@ export function headHitsSnake(attacker: Snake, victim: Snake): boolean {
   return false;
 }
 
-/** True if the snake's head is outside the rectangular world bounds. */
+/**
+ * True once the head's leading edge reaches the wall (consistent on all four sides, rather
+ * than dying when the head centre is already half over the border).
+ */
 export function headOutsideBorder(s: Snake, world: World): boolean {
   const h = s.segments[0];
-  return Math.abs(h.x) > world.width / 2 || Math.abs(h.y) > world.height / 2;
+  const r = snakeRadius(s);
+  return Math.abs(h.x) + r > world.width / 2 || Math.abs(h.y) + r > world.height / 2;
 }

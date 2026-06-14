@@ -1,4 +1,4 @@
-import { vec, rotateToward } from '../math/vec2';
+import { vec, distance, rotateToward, type Vec2 } from '../math/vec2';
 import type { GameState, InputState, Snake } from './types';
 import type { Difficulty, DifficultySettings } from '../config/difficulty';
 import { DIFFICULTIES } from '../config/difficulty';
@@ -8,10 +8,32 @@ import { headHitsSnake, headOutsideBorder } from './collision';
 import { decideHeading, decideBoost } from './bots';
 import {
   WORLD_WIDTH, WORLD_HEIGHT, BASE_SPEED, TURN_RATE, BOT_TURN_RATE, MIN_BOOST_MASS, BOOST_DRAIN,
-  BOOST_MULTIPLIER, BOOST_DROP_INTERVAL, FOOD_VALUE, START_MASS,
+  BOOST_MULTIPLIER, BOOST_DROP_INTERVAL, FOOD_VALUE, START_MASS, MIN_SPAWN_DISTANCE,
 } from './constants';
 
 export const PLAYER_ID = 'player';
+
+/**
+ * Pick a spawn point at least MIN_SPAWN_DISTANCE from every living snake's head, so a new
+ * snake never appears on top of or right in front of another. Falls back to the farthest
+ * candidate found if no fully-clear point turns up within a few tries.
+ */
+function safeSpawnPoint(state: GameState, rng: () => number): Vec2 {
+  let best = randomWorldPoint(state.world, rng);
+  let bestMin = -1;
+  for (let attempt = 0; attempt < 24; attempt++) {
+    const p = randomWorldPoint(state.world, rng);
+    let minD = Infinity;
+    for (const s of state.snakes) {
+      if (!s.alive) continue;
+      const d = distance(p, s.segments[0]);
+      if (d < minD) minD = d;
+    }
+    if (minD >= MIN_SPAWN_DISTANCE) return p;
+    if (minD > bestMin) { bestMin = minD; best = p; }
+  }
+  return best;
+}
 
 const BOT_NAMES = [
   'Rex', 'Biscuit', 'Sparkle', 'Zoom', 'Noodle', 'Fang', 'Pebble', 'Sunny',
@@ -35,7 +57,7 @@ export function createGame(difficulty: Difficulty, playerSkinId: string, rng: ()
   }));
 
   for (let i = 0; i < settings.botCount; i++) {
-    const pos = randomWorldPoint(state.world, rng);
+    const pos = safeSpawnPoint(state, rng);
     state.snakes.push(createSnake({
       id: `bot${i}`,
       name: BOT_NAMES[i % BOT_NAMES.length],
@@ -136,7 +158,7 @@ export function update(
     if (!s.alive && !s.isPlayer) {
       state.snakes[i] = createSnake({
         id: s.id, name: s.name, isPlayer: false, skinId: s.skinId,
-        pos: randomWorldPoint(state.world, rng), heading: rng() * Math.PI * 2,
+        pos: safeSpawnPoint(state, rng), heading: rng() * Math.PI * 2,
       });
     }
   }
