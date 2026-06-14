@@ -38,19 +38,21 @@ export function drawSnake(
   const skin = getSkin(s.skinId);
   const r = snakeRadius(s) * cam.zoom;
 
-  // Spawn invulnerability: a smooth pulse between full colour and slightly translucent.
-  // The pulse starts slow and accelerates (cubic ramp) so the player gets a "get ready"
-  // cue as the timer runs out.
-  if (s.spawnGraceTicks > 0) {
-    const elapsedFrac = 1 - s.spawnGraceTicks / SPAWN_GRACE_TICKS; // 0 -> 1 over the grace
-    const phase = Math.PI * 2 * 14 * Math.pow(elapsedFrac, 3);     // accelerating cadence
-    const dip = 0.45;                                              // min alpha = 1 - dip = 0.55
-    ctx.globalAlpha = 1 - dip * (0.5 - 0.5 * Math.cos(phase));     // smooth 1.0 <-> 0.55
-  }
+  // Spawn invulnerability: a smooth translucency pulse that travels head -> tail and
+  // accelerates as the timer runs out, so it strobes across the body near vulnerability.
+  const grace = s.spawnGraceTicks > 0;
+  const gracePhase = grace
+    ? Math.PI * 2 * 14 * Math.pow(1 - s.spawnGraceTicks / SPAWN_GRACE_TICKS, 3)
+    : 0;
+  const GRACE_DIP = 0.45; // min alpha = 1 - dip = 0.55 (slightly translucent)
+  const GRACE_WAVE = 0.6; // phase offset per section so the pulse ripples down the body
+  const sectionAlpha = (i: number): number =>
+    grace ? 1 - GRACE_DIP * (0.5 - 0.5 * Math.cos(gracePhase - i * GRACE_WAVE)) : 1;
 
   // body
   for (let i = s.segments.length - 1; i >= 0; i--) {
     const p = worldToScreen(cam, s.segments[i]);
+    ctx.globalAlpha = sectionAlpha(i); // spawn-grace pulse ripples along the body
     ctx.beginPath();
     ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
     if (skin.pattern === 'stripes' && i % 2 === 0) ctx.fillStyle = skin.accent;
@@ -77,7 +79,8 @@ export function drawSnake(
     }
   }
 
-  // head details
+  // head details (use the head's section alpha during spawn grace)
+  ctx.globalAlpha = sectionAlpha(0);
   const head = worldToScreen(cam, s.segments[0]);
   const dir = { x: Math.cos(s.heading), y: Math.sin(s.heading) };
   const side = { x: -dir.y, y: dir.x };
