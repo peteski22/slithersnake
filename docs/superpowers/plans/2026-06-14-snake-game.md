@@ -2048,7 +2048,7 @@ export class Controls {
   private keys = new Set<string>();
   private readonly deadZone = 14; // px before steering registers
 
-  constructor(private target: HTMLElement) {
+  constructor(target: HTMLElement) {
     target.addEventListener('pointerdown', this.onDown, { passive: false });
     target.addEventListener('pointermove', this.onMove, { passive: false });
     target.addEventListener('pointerup', this.onUp);
