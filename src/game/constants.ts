@@ -27,3 +27,6 @@ export const MIN_BOOST_MASS = 12;     // = START_MASS; can't boost once shrunk t
 export const BOOST_DRAIN = 6;         // mass/sec lost while boosting
 export const BOOST_MULTIPLIER = 1.8;  // speed multiplier while boosting
 export const BOOST_DROP_INTERVAL = 0.15; // seconds between dropped pellets while boosting
+
+// Spawn
+export const SPAWN_GRACE_TICKS = 300; // ~5s invulnerability at spawn (60fps): body "grows out" and you can escape if you spawned on someone

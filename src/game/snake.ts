@@ -2,7 +2,7 @@ import { Vec2, vec, add, sub, scale, length, normalize, fromAngle } from '../mat
 import type { Snake } from './types';
 import {
   SEGMENT_SPACING, START_SEGMENTS, BASE_RADIUS, GIRTH_FACTOR,
-  MASS_PER_SEGMENT, START_MASS,
+  MASS_PER_SEGMENT, START_MASS, SPAWN_GRACE_TICKS,
 } from './constants';
 
 export interface CreateSnakeParams {
@@ -26,10 +26,10 @@ export function desiredSegments(mass: number): number {
 }
 
 export function createSnake(p: CreateSnakeParams): Snake {
-  const dir = fromAngle(p.heading);
+  // Start collapsed at the spawn point; the body "grows out" as the head moves away.
   const segments: Vec2[] = [];
   for (let i = 0; i < START_SEGMENTS; i++) {
-    segments.push(sub(p.pos, scale(dir, i * SEGMENT_SPACING)));
+    segments.push({ ...p.pos });
   }
   return {
     id: p.id,
@@ -42,6 +42,7 @@ export function createSnake(p: CreateSnakeParams): Snake {
     boosting: false,
     alive: true,
     boostDropTimer: 0,
+    spawnGraceTicks: SPAWN_GRACE_TICKS,
   };
 }
 

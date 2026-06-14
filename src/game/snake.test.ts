@@ -5,12 +5,12 @@ import { createSnake, radiusForMass, desiredSegments, stepSnake, applyGrowth } f
 import { SEGMENT_SPACING, START_MASS, START_SEGMENTS } from './constants';
 
 describe('snake model', () => {
-  it('creates a snake facing its heading with START_SEGMENTS points', () => {
-    const s = createSnake({ id: 'p', name: 'You', isPlayer: true, skinId: 'pink', pos: vec(0, 0), heading: 0 });
+  it('creates a snake collapsed at the spawn point with START_SEGMENTS points', () => {
+    const s = createSnake({ id: 'p', name: 'You', isPlayer: true, skinId: 'pink', pos: vec(5, 7), heading: 0 });
     expect(s.segments.length).toBe(START_SEGMENTS);
     expect(s.mass).toBe(START_MASS);
-    // body trails behind the head along -heading
-    expect(s.segments[0].x).toBeGreaterThan(s.segments[1].x);
+    // all sections start stacked at the spawn point; the body extends as the head moves
+    expect(s.segments.every((seg) => seg.x === 5 && seg.y === 7)).toBe(true);
   });
 
   it('girth grows with mass', () => {

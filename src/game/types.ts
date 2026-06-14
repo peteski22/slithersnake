@@ -14,6 +14,7 @@ export interface Snake {
   boosting: boolean;
   alive: boolean;
   boostDropTimer: number; // internal: time accumulator for boost food drops
+  spawnGraceTicks: number; // invulnerable countdown while the collapsed body extends at spawn
 }
 
 export interface Food {
