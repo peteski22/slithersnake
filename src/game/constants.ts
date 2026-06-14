@@ -1,7 +1,7 @@
 // All tunable gameplay numbers live here so balancing is a one-file change.
 
 // Body shape
-export const SEGMENT_SPACING = 17;    // world units between body points (spaced but still overlapping)
+export const SEGMENT_SPACING = 21;    // world units between body points (spaced but still overlapping)
 export const START_SEGMENTS = 8;      // body points at spawn
 export const BASE_RADIUS = 9;         // segment radius (px world units) at mass 0
 export const GIRTH_FACTOR = 1.3;      // radius added per sqrt(mass)

@@ -1,7 +1,7 @@
 // src/game/snake.test.ts
 import { describe, it, expect } from 'vitest';
 import { vec, distance } from '../math/vec2';
-import { createSnake, radiusForMass, desiredSegments, stepSnake, applyGrowth } from './snake';
+import { createSnake, radiusForMass, desiredSegments, stepSnake } from './snake';
 import { SEGMENT_SPACING, START_MASS, START_SEGMENTS } from './constants';
 
 describe('snake model', () => {
@@ -32,10 +32,15 @@ describe('snake model', () => {
     expect(gap).toBeCloseTo(SEGMENT_SPACING, 0);
   });
 
-  it('applyGrowth appends body points as mass increases', () => {
-    const s = createSnake({ id: 'p', name: 'You', isPlayer: true, skinId: 'pink', pos: vec(0, 0), heading: 0 });
-    s.mass = START_MASS + 80;
-    applyGrowth(s);
-    expect(s.segments.length).toBe(desiredSegments(s.mass));
+  it('grows the body length (more sections) as mass increases', () => {
+    const small = createSnake({ id: 'a', name: 'A', isPlayer: true, skinId: 'pink', pos: vec(0, 0), heading: 0 });
+    const big = createSnake({ id: 'b', name: 'B', isPlayer: true, skinId: 'pink', pos: vec(0, 0), heading: 0 });
+    big.mass = START_MASS + 80;
+    // move both straight so their bodies extend fully along the path
+    for (let i = 0; i < 200; i++) {
+      stepSnake(small, 120, 1 / 60);
+      stepSnake(big, 120, 1 / 60);
+    }
+    expect(big.segments.length).toBeGreaterThan(small.segments.length);
   });
 });

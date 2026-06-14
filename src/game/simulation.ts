@@ -2,7 +2,7 @@ import { vec, rotateToward } from '../math/vec2';
 import type { GameState, InputState, Snake } from './types';
 import type { Difficulty, DifficultySettings } from '../config/difficulty';
 import { DIFFICULTIES } from '../config/difficulty';
-import { createSnake, stepSnake, applyGrowth } from './snake';
+import { createSnake, stepSnake } from './snake';
 import { tryEat, attractFood, burstFromSnake, replenishFood, randomWorldPoint } from './food';
 import { headHitsSnake, headOutsideBorder } from './collision';
 import { decideHeading, decideBoost } from './bots';
@@ -97,16 +97,15 @@ export function update(
         state.food.push({ id: state.nextFoodId++, pos: { ...tail }, value: FOOD_VALUE, big: false });
       }
     }
-    applyGrowth(s);
   }
 
-  // 3) Eating (food is magnetised toward the head first, then eaten).
+  // 3) Eating (food is magnetised toward the head first, then eaten). Body length is
+  // derived continuously from mass in stepSnake, so no explicit growth step is needed.
   for (const s of state.snakes) {
     if (s.alive) {
       attractFood(state, s, dt);
       tryEat(state, s);
     }
-    applyGrowth(s);
   }
 
   // 4) Collisions. The border is ALWAYS deadly (every difficulty); then body hits.
