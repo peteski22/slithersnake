@@ -49,30 +49,35 @@ export function drawSnake(
   const sectionAlpha = (i: number): number =>
     grace ? 1 - GRACE_DIP * (0.5 - 0.5 * Math.cos(gracePhase - i * GRACE_WAVE)) : 1;
 
-  // body
-  for (let i = s.segments.length - 1; i >= 0; i--) {
+  // body (the tail tapers to a point so new sections grow in seamlessly, not "pop" on)
+  const n = s.segments.length;
+  const TAIL_TAPER = 4; // number of trailing sections that shrink toward the tip
+  for (let i = n - 1; i >= 0; i--) {
     const p = worldToScreen(cam, s.segments[i]);
+    const fromTail = n - 1 - i;
+    const taper = fromTail >= TAIL_TAPER ? 1 : 0.35 + 0.65 * (fromTail / TAIL_TAPER);
+    const segR = r * taper;
     ctx.globalAlpha = sectionAlpha(i); // spawn-grace pulse ripples along the body
     ctx.beginPath();
-    ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+    ctx.arc(p.x, p.y, segR, 0, Math.PI * 2);
     if (skin.pattern === 'stripes' && i % 2 === 0) ctx.fillStyle = skin.accent;
     else ctx.fillStyle = skin.body;
     ctx.fill();
     // outline each section so the snake reads as connected segments that visibly move
-    ctx.lineWidth = Math.max(1, r * 0.14);
+    ctx.lineWidth = Math.max(1, segR * 0.14);
     ctx.strokeStyle = 'rgba(0, 0, 0, 0.18)';
     ctx.stroke();
     if (skin.pattern === 'spots' && i % 3 === 0) {
       ctx.beginPath();
-      ctx.arc(p.x, p.y, r * 0.4, 0, Math.PI * 2);
+      ctx.arc(p.x, p.y, segR * 0.4, 0, Math.PI * 2);
       ctx.fillStyle = skin.accent;
       ctx.fill();
     }
     if (skin.spikes && i % 2 === 0) {
       ctx.beginPath();
-      ctx.moveTo(p.x, p.y - r * 1.4);
-      ctx.lineTo(p.x - r * 0.5, p.y - r * 0.4);
-      ctx.lineTo(p.x + r * 0.5, p.y - r * 0.4);
+      ctx.moveTo(p.x, p.y - segR * 1.4);
+      ctx.lineTo(p.x - segR * 0.5, p.y - segR * 0.4);
+      ctx.lineTo(p.x + segR * 0.5, p.y - segR * 0.4);
       ctx.closePath();
       ctx.fillStyle = skin.accent;
       ctx.fill();
