@@ -1,4 +1,4 @@
-import { Vec2, add, scale, distance, fromAngle } from '../math/vec2';
+import { Vec2, add, sub, scale, distance, fromAngle } from '../math/vec2';
 import type { Snake } from './types';
 import {
   SEGMENT_SPACING, START_SEGMENTS, BASE_RADIUS, GIRTH_FACTOR,
@@ -10,8 +10,10 @@ export interface CreateSnakeParams {
   name: string;
   isPlayer: boolean;
   skinId: string;
-  pos: Vec2;     // head position
+  pos: Vec2;          // head position
   heading: number;
+  mass?: number;      // starting mass (defaults to START_MASS)
+  grown?: boolean;    // if true, spawn already full-length (an enemy "already in the arena")
 }
 
 /** Segment radius (world units) for a given mass. */
@@ -26,19 +28,31 @@ export function desiredSegments(mass: number): number {
 }
 
 export function createSnake(p: CreateSnakeParams): Snake {
-  // Every snake (player and bots) grows out from the spawn point so none "pops in" at full
-  // length in front of others and causes accidental kills. Only the player is invulnerable.
+  const mass = p.mass ?? START_MASS;
   const segments: Vec2[] = [];
-  for (let i = 0; i < START_SEGMENTS; i++) segments.push({ ...p.pos });
+  let path: Vec2[];
+  if (p.grown) {
+    // Already in the arena: lay the body out full-length behind the head.
+    const dir = fromAngle(p.heading);
+    const count = desiredSegments(mass);
+    for (let i = 0; i < count; i++) segments.push(sub(p.pos, scale(dir, i * SEGMENT_SPACING)));
+    path = [];
+    for (let i = 0; i <= count + 1; i++) path.push(sub(p.pos, scale(dir, i * SEGMENT_SPACING)));
+  } else {
+    // Collapsed at the spawn point; grows out as the head moves so it never "pops in" at
+    // full length in front of others. Only the player is invulnerable while it grows.
+    for (let i = 0; i < START_SEGMENTS; i++) segments.push({ ...p.pos });
+    path = [{ ...p.pos }];
+  }
   return {
     id: p.id,
     name: p.name,
     isPlayer: p.isPlayer,
     skinId: p.skinId,
     segments,
-    path: [{ ...p.pos }],
+    path,
     heading: p.heading,
-    mass: START_MASS,
+    mass,
     boosting: false,
     alive: true,
     boostDropTimer: 0,

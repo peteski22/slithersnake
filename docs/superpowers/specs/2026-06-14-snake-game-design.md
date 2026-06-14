@@ -124,7 +124,13 @@ trap the player:
 - **Hard** — many bots that actively hunt, anticipate the player's path, and try to trap
   them; suited to the 9-10 year old and up.
 
-Difficulty is chosen on the start screen and remembered between sessions.
+Difficulty is chosen on the start screen and remembered between sessions. Enemies are
+seeded at **varied sizes** at game start (biased toward smaller) to bootstrap a lively
+arena rather than everyone starting tiny.
+
+When the **player dies and continues**, a fresh small player respawns into the *existing*
+world — enemies keep their current sizes (this is also how the future Revive works). Only a
+deliberate **Restart** resets everyone to starting size.
 
 ## Skins
 
@@ -162,8 +168,9 @@ This spawn presentation is part of the core look and is not themed away.
 
 ## Persistence
 
-`localStorage` only: best score, last-used skin, selected difficulty, mute preference,
-background theme, and enemy-skin edition. No accounts, no network, no analytics.
+`localStorage` only: best score, **player name** (the snake's name shown on the
+leaderboard), last-used skin, selected difficulty, mute preference, background theme, and
+enemy-skin edition. No accounts, no network, no analytics.
 
 ## Testing
 
