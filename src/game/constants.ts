@@ -23,8 +23,8 @@ export const DEATH_FOOD_SPACING = 34; // arc-length gap between pellets dropped 
 export const DEATH_FOOD_VALUE = 3;    // mass per death pellet (glowing/big)
 
 // Food magnetism (pellets get sucked toward a nearby head)
-export const FOOD_MAGNET_RANGE = 42;  // world units beyond the head radius that pulls food in
-export const FOOD_MAGNET_SPEED = 260; // world units/sec a pulled pellet moves toward the head
+export const FOOD_MAGNET_RANGE = 12;  // world units beyond the head radius that pulls food in (only when very close)
+export const FOOD_MAGNET_SPEED = 140; // world units/sec a pulled pellet drifts toward the head (gentle)
 
 // Boost
 export const MIN_BOOST_MASS = 12;     // = START_MASS; can't boost once shrunk to the starting size
