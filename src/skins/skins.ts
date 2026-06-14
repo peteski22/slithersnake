@@ -38,13 +38,14 @@ export function drawSnake(
   const skin = getSkin(s.skinId);
   const r = snakeRadius(s) * cam.zoom;
 
-  // Spawn invulnerability: flash translucent, and flash faster as the timer runs out so
-  // the player gets a "get ready" cue before becoming vulnerable.
+  // Spawn invulnerability: a smooth pulse between full colour and slightly translucent.
+  // The pulse starts slow and accelerates (cubic ramp) so the player gets a "get ready"
+  // cue as the timer runs out.
   if (s.spawnGraceTicks > 0) {
-    const frac = s.spawnGraceTicks / SPAWN_GRACE_TICKS; // 1 -> 0 as grace runs out
-    const period = 6 + Math.round(frac * 20);           // ~26 ticks (slow) -> ~6 ticks (fast)
-    const elapsed = SPAWN_GRACE_TICKS - s.spawnGraceTicks;
-    ctx.globalAlpha = elapsed % period < period / 2 ? 1 : 0.3;
+    const elapsedFrac = 1 - s.spawnGraceTicks / SPAWN_GRACE_TICKS; // 0 -> 1 over the grace
+    const phase = Math.PI * 2 * 14 * Math.pow(elapsedFrac, 3);     // accelerating cadence
+    const dip = 0.45;                                              // min alpha = 1 - dip = 0.55
+    ctx.globalAlpha = 1 - dip * (0.5 - 0.5 * Math.cos(phase));     // smooth 1.0 <-> 0.55
   }
 
   // body
