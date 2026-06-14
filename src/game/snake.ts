@@ -1,4 +1,4 @@
-import { Vec2, add, sub, scale, distance, fromAngle } from '../math/vec2';
+import { Vec2, add, scale, distance, fromAngle } from '../math/vec2';
 import type { Snake } from './types';
 import {
   SEGMENT_SPACING, START_SEGMENTS, BASE_RADIUS, GIRTH_FACTOR,
@@ -26,26 +26,17 @@ export function desiredSegments(mass: number): number {
 }
 
 export function createSnake(p: CreateSnakeParams): Snake {
+  // Every snake (player and bots) grows out from the spawn point so none "pops in" at full
+  // length in front of others and causes accidental kills. Only the player is invulnerable.
   const segments: Vec2[] = [];
-  let path: Vec2[];
-  if (p.isPlayer) {
-    // The player starts collapsed at the spawn point and "grows out" as the head moves.
-    for (let i = 0; i < START_SEGMENTS; i++) segments.push({ ...p.pos });
-    path = [{ ...p.pos }];
-  } else {
-    // Enemies are already in the arena, laid out full-length behind their head.
-    const dir = fromAngle(p.heading);
-    for (let i = 0; i < START_SEGMENTS; i++) segments.push(sub(p.pos, scale(dir, i * SEGMENT_SPACING)));
-    path = [];
-    for (let i = 0; i <= START_SEGMENTS; i++) path.push(sub(p.pos, scale(dir, i * SEGMENT_SPACING)));
-  }
+  for (let i = 0; i < START_SEGMENTS; i++) segments.push({ ...p.pos });
   return {
     id: p.id,
     name: p.name,
     isPlayer: p.isPlayer,
     skinId: p.skinId,
     segments,
-    path,
+    path: [{ ...p.pos }],
     heading: p.heading,
     mass: START_MASS,
     boosting: false,
