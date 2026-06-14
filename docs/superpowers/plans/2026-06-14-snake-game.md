@@ -52,7 +52,7 @@ snake/
       skins.ts                 # skin roster + procedural snake drawing
     ui/
       screens.ts              # start + game-over DOM overlays
-      hud.ts                   # leaderboard, minimap, score, King flash, mute toggle
+      hud.ts                   # leaderboard, score, King flash, mute toggle
     audio/
       audio.ts                 # Web Audio sound effects + looping music + mute
     persistence/
@@ -451,10 +451,11 @@ describe('vec2', () => {
     expect(rotateToward(0, Math.PI / 2, Math.PI / 6)).toBeCloseTo(Math.PI / 6);
     // within step -> snaps to target
     expect(rotateToward(0, 0.1, 1)).toBeCloseTo(0.1);
-    // shortest path goes the short way (through ±PI), not the long way:
-    // from -3 toward 3 the short direction is negative; a 0.5 step moves 0.5 rad.
-    const stepped = rotateToward(-3, 3, 0.5);
-    expect(Math.abs(normalizeAngle(stepped - (-3)))).toBeCloseTo(0.5);
+    // shortest path goes the short way (through ±PI), not the long way.
+    // The short distance from -3 to 3 is ~0.283 rad, so a 0.1 step moves 0.1 rad
+    // that way (must be smaller than 0.283 or it would snap straight to the target).
+    const stepped = rotateToward(-3, 3, 0.1);
+    expect(Math.abs(normalizeAngle(stepped - (-3)))).toBeCloseTo(0.1);
   });
 });
 ```
@@ -2160,7 +2161,6 @@ No unit test (DOM rendering — verified in Task 17).
 }
 .leaderboard h4 { font-size: 13px; border-bottom: 1px solid rgba(0,0,0,0.15); margin-bottom: 4px; }
 .leaderboard .you { color: #d2447a; font-weight: 700; }
-.minimap { position: fixed; bottom: 12px; right: 12px; background: rgba(0,0,0,0.3); border-radius: 10px; }
 .boost-btn {
   position: fixed; bottom: 16px; right: 96px; width: 76px; height: 76px;
   border-radius: 50%; background: rgba(255,126,179,0.8); color: #fff;
@@ -2202,14 +2202,11 @@ No unit test (DOM rendering — verified in Task 17).
 ```ts
 import type { GameState } from '../game/types';
 import { ranking, scoreOf, kingId } from '../game/leaderboard';
-import type { Camera } from '../render/camera';
 
 export class Hud {
   private root: HTMLElement;
   private scoreEl: HTMLElement;
   private boardEl: HTMLElement;
-  private minimap: HTMLCanvasElement;
-  private mmCtx: CanvasRenderingContext2D;
   private wasKing = false;
 
   constructor(mount: HTMLElement) {
@@ -2217,17 +2214,14 @@ export class Hud {
     this.root.innerHTML = `
       <div class="score-pill" id="score"></div>
       <div class="leaderboard"><h4>Leaderboard</h4><div id="board"></div></div>
-      <canvas class="minimap" id="minimap" width="120" height="90"></canvas>
       <button class="boost-btn" id="boost">BOOST</button>
       <button class="mute-btn" id="mute">🔊</button>
     `;
     this.scoreEl = this.root.querySelector('#score')!;
     this.boardEl = this.root.querySelector('#board')!;
-    this.minimap = this.root.querySelector('#minimap') as HTMLCanvasElement;
-    this.mmCtx = this.minimap.getContext('2d')!;
   }
 
-  update(state: GameState, playerId: string, best: number, _cam: Camera): void {
+  update(state: GameState, playerId: string, best: number): void {
     const ranked = ranking(state.snakes);
     const player = state.snakes.find((s) => s.id === playerId);
     const king = kingId(state.snakes);
@@ -2244,8 +2238,6 @@ export class Hud {
     const isKing = king === playerId;
     if (isKing && !this.wasKing) this.flashKing();
     this.wasKing = isKing;
-
-    this.drawMinimap(state, playerId);
   }
 
   private flashKing(): void {
@@ -2254,26 +2246,6 @@ export class Hud {
     el.textContent = "You're the King! 👑";
     this.root.appendChild(el);
     setTimeout(() => el.remove(), 1700);
-  }
-
-  private drawMinimap(state: GameState, playerId: string): void {
-    const { width, height } = this.minimap;
-    const ctx = this.mmCtx;
-    ctx.clearRect(0, 0, width, height);
-    ctx.fillStyle = 'rgba(255,255,255,0.15)';
-    ctx.beginPath();
-    ctx.arc(width / 2, height / 2, Math.min(width, height) / 2 - 2, 0, Math.PI * 2);
-    ctx.fill();
-    const scale = (Math.min(width, height) / 2 - 2) / state.world.radius;
-    for (const s of state.snakes) {
-      if (!s.alive) continue;
-      const x = width / 2 + s.segments[0].x * scale;
-      const y = height / 2 + s.segments[0].y * scale;
-      ctx.beginPath();
-      ctx.arc(x, y, s.id === playerId ? 3 : 2, 0, Math.PI * 2);
-      ctx.fillStyle = s.id === playerId ? '#ff2bd6' : '#4dabff';
-      ctx.fill();
-    }
   }
 
   /** Allow main.ts to wire the boost button into Controls via pointer events. */
@@ -2698,7 +2670,7 @@ function gameLoopOnce(difficulty: Difficulty, skinId: string): Promise<number> {
       const w = window.innerWidth, h = window.innerHeight;
       const cam = makeCamera(player.segments[0], w, h, 1);
       render(ctx, state, cam);
-      hud.update(state, PLAYER_ID, Math.max(best, score), cam);
+      hud.update(state, PLAYER_ID, Math.max(best, score));
 
       if (!player.alive) {
         cancelAnimationFrame(raf);

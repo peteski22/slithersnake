@@ -53,7 +53,7 @@ Focused modules, each with one clear purpose and a narrow interface:
   state.
 - `render` — all canvas drawing (world, snakes, food, effects), driven by the camera.
 - `skins` — the skin roster and procedural per-segment drawing that scales with girth.
-- `ui` — screen flow and HUD (start, play, game over; leaderboard, minimap, score, crown).
+- `ui` — screen flow and HUD (start, play, game over; leaderboard, score, crown).
 - `persistence` — `localStorage` for best score, last-used skin, and difficulty.
 
 The simulation is a single authoritative model; rendering is a pure projection of it
@@ -101,8 +101,7 @@ free of canvas/DOM access so it can be unit-tested directly.
 - **Start screen**: title styled to evoke the real game; **difficulty selector**
   (Easy / Normal / Hard); a **swipeable skin carousel** with all skins unlocked; Play button.
 - **Play screen (HUD)**: length + best score top-center; **leaderboard** top-right (the
-  player and named bots, crown on rank #1); **minimap** bottom-right; thumbstick bottom-left;
-  boost bottom-right. (Layout approved via mockup.)
+  player and named bots, crown on rank #1); thumbstick bottom-left; boost bottom-right.
 - **Game-over screen**: final score, best score, **Play Again**, and **Change Snake**.
 
 ## Bots & difficulty
