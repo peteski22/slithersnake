@@ -1,8 +1,8 @@
 // src/game/snake.test.ts
 import { describe, it, expect } from 'vitest';
 import { vec, distance } from '../math/vec2';
-import { createSnake, radiusForMass, desiredSegments, stepSnake } from './snake';
-import { SEGMENT_SPACING, START_MASS, START_SEGMENTS } from './constants';
+import { createSnake, radiusForMass, desiredSegments, stepSnake, segmentSpacing } from './snake';
+import { START_MASS, START_SEGMENTS } from './constants';
 
 describe('snake model', () => {
   it('creates a snake collapsed at the spawn point with START_SEGMENTS points', () => {
@@ -27,9 +27,9 @@ describe('snake model', () => {
     const startHead = { ...s.segments[0] };
     stepSnake(s, 100, 1); // speed 100, dt 1 -> head moves +100 in x
     expect(s.segments[0].x).toBeCloseTo(startHead.x + 100, 1);
-    // spacing between consecutive points stays ~SEGMENT_SPACING
+    // spacing between consecutive points stays ~one (girth-scaled) section gap
     const gap = distance(s.segments[0], s.segments[1]);
-    expect(gap).toBeCloseTo(SEGMENT_SPACING, 0);
+    expect(gap).toBeCloseTo(segmentSpacing(START_MASS), 0);
   });
 
   it('grows the body length (more sections) as mass increases', () => {

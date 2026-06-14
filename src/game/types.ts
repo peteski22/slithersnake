@@ -13,6 +13,7 @@ export interface Snake {
   path: Vec2[];
   heading: number; // radians, current facing
   mass: number;    // drives both length (segment count) and girth (radius)
+  score: number;   // accumulated points (pellets + body pellets + kills); independent of mass
   boosting: boolean;
   alive: boolean;
   boostDropTimer: number; // internal: time accumulator for boost food drops

@@ -1,6 +1,6 @@
 import type { Snake, SnakeId } from './types';
 
-export const scoreOf = (s: Snake): number => Math.floor(s.mass);
+export const scoreOf = (s: Snake): number => s.score;
 
 /** Alive snakes sorted by score, highest first. */
 export function ranking(snakes: Snake[]): Snake[] {

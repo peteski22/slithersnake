@@ -1,7 +1,7 @@
 import { Vec2, add, sub, scale, distance, fromAngle } from '../math/vec2';
 import type { Snake } from './types';
 import {
-  SEGMENT_SPACING, START_SEGMENTS, BASE_RADIUS, GIRTH_FACTOR,
+  SEGMENT_SPACING_RATIO, START_SEGMENTS, BASE_RADIUS, GIRTH_FACTOR,
   MASS_PER_SEGMENT, START_MASS, SPAWN_GRACE_TICKS,
 } from './constants';
 
@@ -21,6 +21,11 @@ export function radiusForMass(mass: number): number {
   return BASE_RADIUS + Math.sqrt(Math.max(0, mass)) * GIRTH_FACTOR;
 }
 
+/** Distance between body sections, scaled to the girth so spacing looks the same at any size. */
+export function segmentSpacing(mass: number): number {
+  return radiusForMass(mass) * SEGMENT_SPACING_RATIO;
+}
+
 /** How many body sections a snake should have at a given mass (whole sections). */
 export function desiredSegments(mass: number): number {
   const extra = Math.floor((mass - START_MASS) / MASS_PER_SEGMENT);
@@ -35,9 +40,10 @@ export function createSnake(p: CreateSnakeParams): Snake {
     // Already in the arena: lay the body out full-length behind the head.
     const dir = fromAngle(p.heading);
     const count = desiredSegments(mass);
-    for (let i = 0; i < count; i++) segments.push(sub(p.pos, scale(dir, i * SEGMENT_SPACING)));
+    const sp = segmentSpacing(mass);
+    for (let i = 0; i < count; i++) segments.push(sub(p.pos, scale(dir, i * sp)));
     path = [];
-    for (let i = 0; i <= count + 1; i++) path.push(sub(p.pos, scale(dir, i * SEGMENT_SPACING)));
+    for (let i = 0; i <= count + 1; i++) path.push(sub(p.pos, scale(dir, i * sp)));
   } else {
     // Collapsed at the spawn point; grows out as the head moves so it never "pops in" at
     // full length in front of others. Only the player is invulnerable while it grows.
@@ -53,6 +59,7 @@ export function createSnake(p: CreateSnakeParams): Snake {
     path,
     heading: p.heading,
     mass,
+    score: 0,
     boosting: false,
     alive: true,
     boostDropTimer: 0,
@@ -61,14 +68,15 @@ export function createSnake(p: CreateSnakeParams): Snake {
 }
 
 /**
- * Place the body sections along the head's path at fixed SEGMENT_SPACING intervals; the
- * section count comes from mass (whole sections). Because every section advances along the
+ * Place the body sections along the head's path at girth-scaled intervals; the section
+ * count comes from mass (whole sections). Because every section advances along the
  * real path each frame, the tail always keeps moving — even when the head loops back.
  */
 function resampleBody(s: Snake): void {
   const want = desiredSegments(s.mass); // whole sections; a new section is added at once
+  const sp = segmentSpacing(s.mass);    // gap scales with girth
   const out: Vec2[] = [{ ...s.path[0] }]; // head
-  let targetDist = SEGMENT_SPACING;
+  let targetDist = sp;
   let traveled = 0;
   for (let i = 1; i < s.path.length && out.length < want; i++) {
     const a = s.path[i - 1];
@@ -77,7 +85,7 @@ function resampleBody(s: Snake): void {
     while (out.length < want && traveled + segLen >= targetDist) {
       const t = segLen > 0 ? (targetDist - traveled) / segLen : 0;
       out.push({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
-      targetDist += SEGMENT_SPACING;
+      targetDist += sp;
     }
     traveled += segLen;
   }
@@ -89,7 +97,8 @@ function resampleBody(s: Snake): void {
 
 /** Keep the path only as long as needed to position the whole body. */
 function trimPath(s: Snake): void {
-  const maxArc = desiredSegments(s.mass) * SEGMENT_SPACING + SEGMENT_SPACING;
+  const sp = segmentSpacing(s.mass);
+  const maxArc = desiredSegments(s.mass) * sp + sp;
   let arc = 0;
   for (let i = 1; i < s.path.length; i++) {
     arc += distance(s.path[i - 1], s.path[i]);

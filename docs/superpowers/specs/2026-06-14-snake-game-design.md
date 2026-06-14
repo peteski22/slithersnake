@@ -84,8 +84,12 @@ free of canvas/DOM access so it can be unit-tested directly.
   - A dead snake **bursts into glowing pellets coloured to that snake** (so it's clear whose
     remains they are), spaced along its former body and **worth more than ambient food** —
     the big growth moments.
-- **Scoring**: score = snake length/mass (no hard win condition; it's score-chasing like
-  the real game). **Best score is saved locally** and shown on the HUD and game-over screen.
+- **Scoring**: score is its **own accumulator**, independent of mass/length, so boosting
+  (which shrinks you) never costs score. Points come from **eating pellets** (a dead snake's
+  body pellets are worth more) and **kills**. No hard win condition — it's score-chasing like
+  the real game. **Best score is saved locally** and shown on the HUD and game-over screen.
+  (Body **size** is still driven by mass; sections are spaced proportionally to girth so they
+  don't bunch up as the snake grows.)
 - **King of the board**: whoever holds **rank #1** on the leaderboard is "the King" and
   wears a **crown** on their snake's head and beside their leaderboard name — player or bot.
   When the player becomes King, a brief "You're the King! 👑" flash and a subtle glow play.

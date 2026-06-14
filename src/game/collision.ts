@@ -1,7 +1,6 @@
 import { distance, sub, dot, fromAngle } from '../math/vec2';
 import type { Snake, World } from './types';
-import { snakeRadius } from './snake';
-import { SEGMENT_SPACING } from './constants';
+import { snakeRadius, segmentSpacing } from './snake';
 
 /** Number of leading body points a snake cannot collide with on itself (its own neck). */
 const SELF_SKIP = 4;
@@ -25,7 +24,7 @@ export function headHitsSnake(attacker: Snake, victim: Snake): boolean {
   const startIndex = attacker === victim ? SELF_SKIP : 0;
   // broad-phase: skip distant snakes cheaply
   if (attacker !== victim) {
-    const span = victim.segments.length * SEGMENT_SPACING + snakeRadius(victim) + snakeRadius(attacker);
+    const span = victim.segments.length * segmentSpacing(victim.mass) + snakeRadius(victim) + snakeRadius(attacker);
     if (distance(headPos, victim.segments[0]) > span) return false;
   }
   const facing = fromAngle(attacker.heading);

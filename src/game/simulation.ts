@@ -8,7 +8,7 @@ import { headHitsSnake, headOutsideBorder } from './collision';
 import { decideHeading, decideBoost } from './bots';
 import {
   WORLD_WIDTH, WORLD_HEIGHT, BASE_SPEED, TURN_RATE, BOT_TURN_RATE, MIN_BOOST_MASS, BOOST_DRAIN,
-  BOOST_MULTIPLIER, BOOST_DROP_INTERVAL, FOOD_VALUE, START_MASS, MIN_SPAWN_DISTANCE,
+  BOOST_MULTIPLIER, BOOST_DROP_INTERVAL, FOOD_VALUE, START_MASS, MIN_SPAWN_DISTANCE, POINTS_KILL,
 } from './constants';
 
 export const PLAYER_ID = 'player';
@@ -63,7 +63,7 @@ export function createGame(
 
   for (let i = 0; i < settings.botCount; i++) {
     const pos = safeSpawnPoint(state, rng);
-    state.snakes.push(createSnake({
+    const bot = createSnake({
       id: `bot${i}`,
       name: BOT_NAMES[i % BOT_NAMES.length],
       isPlayer: false,
@@ -73,7 +73,9 @@ export function createGame(
       // Enemies are already in the arena at varied sizes (biased small) to bootstrap play.
       mass: START_MASS + Math.floor(rng() * rng() * 80),
       grown: true,
-    }));
+    });
+    bot.score = Math.floor(bot.mass - START_MASS); // seed leaderboard variety from starting size
+    state.snakes.push(bot);
   }
 
   replenishFood(state, rng);
@@ -170,6 +172,7 @@ export function update(
       if (!other.alive) continue;
       if (headHitsSnake(s, other)) {
         s.alive = false;
+        other.score += POINTS_KILL; // the snake whose body was hit scores the kill
         burstFromSnake(state, s);
         break;
       }

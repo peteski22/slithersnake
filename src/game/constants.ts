@@ -1,7 +1,7 @@
 // All tunable gameplay numbers live here so balancing is a one-file change.
 
 // Body shape
-export const SEGMENT_SPACING = 21;    // world units between body points (spaced but still overlapping)
+export const SEGMENT_SPACING_RATIO = 1.9; // gap between body sections as a multiple of the section radius (scales with girth)
 export const START_SEGMENTS = 8;      // body points at spawn
 export const BASE_RADIUS = 9;         // segment radius (px world units) at mass 0
 export const GIRTH_FACTOR = 1.3;      // radius added per sqrt(mass)
@@ -35,3 +35,8 @@ export const BOOST_DROP_INTERVAL = 0.15; // seconds between dropped pellets whil
 // Spawn
 export const SPAWN_GRACE_TICKS = 300;   // ~5s invulnerability at spawn (60fps): body "grows out" and you can escape if you spawned on someone
 export const MIN_SPAWN_DISTANCE = 350;  // a new snake must spawn at least this far from every living snake's head
+
+// Scoring (independent of mass/length, so boosting never costs you score)
+export const POINTS_PELLET = 1;       // eating an ambient pellet
+export const POINTS_BIG_PELLET = 2;   // eating a dead snake's (glowing) body pellet
+export const POINTS_KILL = 10;        // making another snake crash into you
