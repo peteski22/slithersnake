@@ -1,7 +1,7 @@
 // src/game/food.test.ts
 import { describe, it, expect } from 'vitest';
 import { vec } from '../math/vec2';
-import { createSnake } from './snake';
+import { createSnake, stepSnake } from './snake';
 import { makeFood, tryEat, burstFromSnake, targetFoodCount } from './food';
 import type { GameState } from './types';
 import { FOOD_VALUE } from './constants';
@@ -43,10 +43,12 @@ describe('food', () => {
     const st = blankState();
     const s = createSnake({ id: 'b', name: 'Bot', isPlayer: false, skinId: 'blue', pos: vec(0, 0), heading: 0 });
     s.mass = 60;
+    // snakes spawn collapsed; move straight so the body has length to drop pellets along
+    for (let i = 0; i < 120; i++) stepSnake(s, 120, 1 / 60);
     const before = st.food.length;
     burstFromSnake(st, s);
     expect(st.food.length).toBeGreaterThan(before);
-    expect(st.food.every((f) => f.big)).toBe(true);
+    expect(st.food.every((f) => f.big && f.color === '#4dabff')).toBe(true);
   });
 
   it('targetFoodCount scales with world size', () => {

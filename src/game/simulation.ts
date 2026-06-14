@@ -3,7 +3,7 @@ import type { GameState, InputState, Snake } from './types';
 import type { Difficulty, DifficultySettings } from '../config/difficulty';
 import { DIFFICULTIES } from '../config/difficulty';
 import { createSnake, stepSnake, applyGrowth } from './snake';
-import { tryEat, burstFromSnake, replenishFood, randomWorldPoint } from './food';
+import { tryEat, attractFood, burstFromSnake, replenishFood, randomWorldPoint } from './food';
 import { headHitsSnake, headOutsideBorder } from './collision';
 import { decideHeading, decideBoost } from './bots';
 import {
@@ -100,9 +100,12 @@ export function update(
     applyGrowth(s);
   }
 
-  // 3) Eating.
+  // 3) Eating (food is magnetised toward the head first, then eaten).
   for (const s of state.snakes) {
-    if (s.alive) tryEat(state, s);
+    if (s.alive) {
+      attractFood(state, s, dt);
+      tryEat(state, s);
+    }
     applyGrowth(s);
   }
 
@@ -118,6 +121,7 @@ export function update(
   for (const s of state.snakes) {
     if (!s.alive || s.spawnGraceTicks > 0) continue;
     for (const other of state.snakes) {
+      if (other === s) continue; // no self-collision: a snake may cross its own body
       if (!other.alive) continue;
       if (headHitsSnake(s, other)) {
         s.alive = false;

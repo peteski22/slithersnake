@@ -19,8 +19,12 @@ export const START_MASS = 12;
 export const FOOD_RADIUS = 5;
 export const FOOD_VALUE = 1;          // mass per normal pellet
 export const FOOD_DENSITY = 0.00009;  // target pellets per world unit^2
-export const DEATH_FOOD_SPACING = 14; // gap between pellets dropped by a dead snake
-export const DEATH_FOOD_VALUE = 2;    // mass per death pellet (glowing/big)
+export const DEATH_FOOD_SPACING = 34; // arc-length gap between pellets dropped by a dead snake
+export const DEATH_FOOD_VALUE = 3;    // mass per death pellet (glowing/big)
+
+// Food magnetism (pellets get sucked toward a nearby head)
+export const FOOD_MAGNET_RANGE = 42;  // world units beyond the head radius that pulls food in
+export const FOOD_MAGNET_SPEED = 260; // world units/sec a pulled pellet moves toward the head
 
 // Boost
 export const MIN_BOOST_MASS = 12;     // = START_MASS; can't boost once shrunk to the starting size

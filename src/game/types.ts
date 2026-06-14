@@ -23,7 +23,8 @@ export interface Food {
   id: number;
   pos: Vec2;
   value: number;
-  big: boolean; // true for glowing pellets from dead snakes
+  big: boolean;     // true for glowing pellets from dead snakes
+  color?: string;   // dead-snake pellets take the snake's colour; ambient pellets leave this unset
 }
 
 export interface World {

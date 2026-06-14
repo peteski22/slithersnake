@@ -38,9 +38,10 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState, cam: Cam
     const p = worldToScreen(cam, f.pos);
     if (p.x < -20 || p.y < -20 || p.x > width + 20 || p.y > height + 20) continue;
     ctx.beginPath();
-    ctx.arc(p.x, p.y, (f.big ? 7 : 5) * cam.zoom, 0, Math.PI * 2);
-    ctx.fillStyle = f.big ? '#ffe600' : '#ff8c42';
-    if (f.big) { ctx.shadowColor = '#ffe600'; ctx.shadowBlur = 12; }
+    ctx.arc(p.x, p.y, (f.big ? 8 : 5) * cam.zoom, 0, Math.PI * 2);
+    const fill = f.color ?? (f.big ? '#ffe600' : '#ff8c42');
+    ctx.fillStyle = fill;
+    if (f.big) { ctx.shadowColor = fill; ctx.shadowBlur = 12; }
     ctx.fill();
     ctx.shadowBlur = 0;
   }
