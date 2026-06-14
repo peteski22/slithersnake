@@ -69,6 +69,165 @@ snake/
 
 ---
 
+## Vertical-slice execution order (testable checkpoints)
+
+The build order is reorganized so the game is runnable in a desktop browser **early and
+often**, not only at the very end. Every module is still built test-first; on top of that
+there are three **integration checkpoints** where you run `pnpm dev`, turn on mouse mode,
+and actually play.
+
+Order (task numbers refer to the task sections below):
+
+1. Task 0 — scaffold ✅
+2. Task 1 — vec2
+3. Task 2 — constants & types
+4. Task 4 — snake model
+5. Task 10 — camera
+6. Task 7 — leaderboard (needed by the renderer)
+7. Task 12 — skins (`drawSnake`, needed by the renderer)
+8. Task 13 — renderer
+9. Task 14 — controls
+10. **Checkpoint A — “drive a snake”** (below): minimal `main.ts`; `pnpm dev`, steer a snake with the mouse, camera follows, border visible.
+11. Task 5 — food
+12. Task 3 — difficulty
+13. Task 8 — bots (steer + boost)
+14. Task 6 — collision
+15. Task 9 — simulation
+16. **Checkpoint B — “playable core”** (below): mid `main.ts`; the full single-player game — bots, eat/grow, boost, death → instant restart. No HUD/audio yet.
+17. Task 11 — persistence
+18. Task 15 — HUD & screens
+19. Task 16 — audio
+20. **Checkpoint C — Task 17 (wire)**: final `main.ts` (start screen, HUD, King flash, audio, mute, persistence). This REPLACES the checkpoint mains.
+21. Task 18 — PWA
+22. Task 19 — install & verify
+
+The checkpoint mains are deliberate throwaway scaffolding that the next checkpoint
+overwrites — keep them tiny. Each checkpoint task: write the file, run
+`pnpm exec tsc --noEmit`, run `pnpm dev` and verify by playing, then commit.
+
+### Checkpoint A — minimal `src/main.ts` (drive one snake)
+
+Depends on: vec2, constants, types, snake, camera, leaderboard, skins, renderer, controls.
+
+```ts
+import './style.css';
+import { rotateToward } from './math/vec2';
+import { createSnake, stepSnake, applyGrowth } from './game/snake';
+import { makeCamera } from './render/camera';
+import { render } from './render/renderer';
+import { Controls } from './input/controls';
+import { TURN_RATE, BASE_SPEED, WORLD_RADIUS } from './game/constants';
+import type { GameState } from './game/types';
+
+const canvas = document.getElementById('game') as HTMLCanvasElement;
+const ctx = canvas.getContext('2d')!;
+
+function resize() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = Math.floor(window.innerWidth * dpr);
+  canvas.height = Math.floor(window.innerHeight * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+window.addEventListener('resize', resize);
+resize();
+
+const controls = new Controls(canvas);
+controls.setMouseMode(true); // desktop testing: drive with the mouse
+
+const state: GameState = {
+  world: { radius: WORLD_RADIUS },
+  snakes: [createSnake({ id: 'player', name: 'You', isPlayer: true, skinId: 'pink', pos: { x: 0, y: 0 }, heading: 0 })],
+  food: [],
+  nextFoodId: 1,
+  tick: 0,
+};
+const player = state.snakes[0];
+
+const FIXED_DT = 1 / 60;
+let last = performance.now();
+let acc = 0;
+
+function frame(now: number) {
+  acc += Math.min(0.1, (now - last) / 1000);
+  last = now;
+  const input = controls.read();
+  while (acc >= FIXED_DT) {
+    if (input.steerAngle !== null) {
+      player.heading = rotateToward(player.heading, input.steerAngle, TURN_RATE * FIXED_DT);
+    }
+    stepSnake(player, BASE_SPEED, FIXED_DT);
+    applyGrowth(player);
+    acc -= FIXED_DT;
+  }
+  const cam = makeCamera(player.segments[0], window.innerWidth, window.innerHeight, 1);
+  render(ctx, state, cam);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+```
+
+Verify: `pnpm dev`, move the mouse — the snake steers toward the pointer, the camera follows, and the arena border ring is visible. Commit: `feat: checkpoint A — drivable snake on canvas`.
+
+### Checkpoint B — mid `src/main.ts` (playable core, no UI chrome)
+
+Depends on additionally: food, difficulty, bots, collision, simulation.
+
+```ts
+import './style.css';
+import { createGame, update, PLAYER_ID } from './game/simulation';
+import { DIFFICULTIES } from './config/difficulty';
+import { Controls } from './input/controls';
+import { makeCamera } from './render/camera';
+import { render } from './render/renderer';
+
+const canvas = document.getElementById('game') as HTMLCanvasElement;
+const ctx = canvas.getContext('2d')!;
+
+function resize() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = Math.floor(window.innerWidth * dpr);
+  canvas.height = Math.floor(window.innerHeight * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+window.addEventListener('resize', resize);
+resize();
+
+const controls = new Controls(canvas);
+controls.setMouseMode(true); // desktop testing
+const rng = () => Math.random();
+const settings = DIFFICULTIES.normal;
+
+let state = createGame('normal', 'pink', rng);
+let player = state.snakes.find((s) => s.id === PLAYER_ID)!;
+
+const FIXED_DT = 1 / 60;
+let last = performance.now();
+let acc = 0;
+
+function frame(now: number) {
+  acc += Math.min(0.1, (now - last) / 1000);
+  last = now;
+  const input = controls.read();
+  while (acc >= FIXED_DT) {
+    update(state, FIXED_DT, input, settings, rng);
+    acc -= FIXED_DT;
+  }
+  if (!player.alive) {
+    // instant restart for testing (final main shows a game-over screen instead)
+    state = createGame('normal', 'pink', rng);
+    player = state.snakes.find((s) => s.id === PLAYER_ID)!;
+  }
+  const cam = makeCamera(player.segments[0], window.innerWidth, window.innerHeight, 1);
+  render(ctx, state, cam);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+```
+
+Verify: `pnpm dev`, play — bots roam and boost, eating pellets grows you longer and fatter, clicking boosts, hitting a body or the border kills you and instantly restarts. Commit: `feat: checkpoint B — playable single-player core`.
+
+---
+
 ## Task 0: Project scaffolding
 
 **Files:**
@@ -218,17 +377,17 @@ dev-dist/
 
 - [ ] **Step 8: Install dependencies**
 
-Run: `npm install`
-Expected: completes, creates `node_modules/` and `package-lock.json`.
+Run: `pnpm install`
+Expected: completes, creates `node_modules/` and `pnpm-lock.yaml`.
 
 - [ ] **Step 9: Verify dev server boots**
 
-Run: `npm run dev` (then stop it with Ctrl-C after confirming)
+Run: `pnpm dev` (then stop it with Ctrl-C after confirming)
 Expected: Vite prints a `localhost` URL; opening it shows "Snake scaffold OK" on a sand-colored canvas.
 
 - [ ] **Step 10: Verify test runner works**
 
-Run: `npm test`
+Run: `pnpm test`
 Expected: Vitest runs and reports "no test files found" (exit 0). This confirms the toolchain.
 
 - [ ] **Step 11: Commit**
@@ -302,7 +461,7 @@ describe('vec2', () => {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `npx vitest run src/math/vec2.test.ts`
+Run: `pnpm exec vitest run src/math/vec2.test.ts`
 Expected: FAIL — module `./vec2` not found.
 
 - [ ] **Step 3: Implement `src/math/vec2.ts`**
@@ -347,7 +506,7 @@ export function rotateToward(current: number, target: number, maxDelta: number):
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `npx vitest run src/math/vec2.test.ts`
+Run: `pnpm exec vitest run src/math/vec2.test.ts`
 Expected: PASS (all cases).
 
 - [ ] **Step 5: Commit**
@@ -449,7 +608,7 @@ export interface InputState {
 
 - [ ] **Step 3: Type-check, then commit**
 
-Run: `npx tsc --noEmit`
+Run: `pnpm exec tsc --noEmit`
 Expected: no errors.
 
 ```bash
@@ -496,7 +655,7 @@ describe('difficulty presets', () => {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `npx vitest run src/config/difficulty.test.ts`
+Run: `pnpm exec vitest run src/config/difficulty.test.ts`
 Expected: FAIL — module not found.
 
 - [ ] **Step 3: Implement `src/config/difficulty.ts`**
@@ -524,7 +683,7 @@ export const DIFFICULTIES: Record<Difficulty, DifficultySettings> = {
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `npx vitest run src/config/difficulty.test.ts`
+Run: `pnpm exec vitest run src/config/difficulty.test.ts`
 Expected: PASS.
 
 - [ ] **Step 5: Commit**
@@ -590,7 +749,7 @@ describe('snake model', () => {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `npx vitest run src/game/snake.test.ts`
+Run: `pnpm exec vitest run src/game/snake.test.ts`
 Expected: FAIL — module not found.
 
 - [ ] **Step 3: Implement `src/game/snake.ts`**
@@ -682,7 +841,7 @@ export const snakeRadius = (s: Snake): number => radiusForMass(s.mass);
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `npx vitest run src/game/snake.test.ts`
+Run: `pnpm exec vitest run src/game/snake.test.ts`
 Expected: PASS.
 
 - [ ] **Step 5: Commit**
@@ -762,7 +921,7 @@ describe('food', () => {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `npx vitest run src/game/food.test.ts`
+Run: `pnpm exec vitest run src/game/food.test.ts`
 Expected: FAIL — module not found.
 
 - [ ] **Step 3: Implement `src/game/food.ts`**
@@ -833,7 +992,7 @@ export function replenishFood(state: GameState, rng: () => number): void {
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `npx vitest run src/game/food.test.ts`
+Run: `pnpm exec vitest run src/game/food.test.ts`
 Expected: PASS.
 
 - [ ] **Step 5: Commit**
@@ -890,7 +1049,7 @@ describe('collision', () => {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `npx vitest run src/game/collision.test.ts`
+Run: `pnpm exec vitest run src/game/collision.test.ts`
 Expected: FAIL — module not found.
 
 - [ ] **Step 3: Implement `src/game/collision.ts`**
@@ -932,7 +1091,7 @@ export function headOutsideBorder(s: Snake, world: World): boolean {
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `npx vitest run src/game/collision.test.ts`
+Run: `pnpm exec vitest run src/game/collision.test.ts`
 Expected: PASS.
 
 - [ ] **Step 5: Commit**
@@ -995,7 +1154,7 @@ describe('leaderboard', () => {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `npx vitest run src/game/leaderboard.test.ts`
+Run: `pnpm exec vitest run src/game/leaderboard.test.ts`
 Expected: FAIL — module not found.
 
 - [ ] **Step 3: Implement `src/game/leaderboard.ts`**
@@ -1019,7 +1178,7 @@ export function kingId(snakes: Snake[]): SnakeId | null {
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `npx vitest run src/game/leaderboard.test.ts`
+Run: `pnpm exec vitest run src/game/leaderboard.test.ts`
 Expected: PASS.
 
 - [ ] **Step 5: Commit**
@@ -1098,7 +1257,7 @@ describe('bot AI', () => {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `npx vitest run src/game/bots.test.ts`
+Run: `pnpm exec vitest run src/game/bots.test.ts`
 Expected: FAIL — module not found.
 
 - [ ] **Step 3: Implement `src/game/bots.ts`**
@@ -1208,7 +1367,7 @@ export function decideBoost(
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `npx vitest run src/game/bots.test.ts`
+Run: `pnpm exec vitest run src/game/bots.test.ts`
 Expected: PASS.
 
 - [ ] **Step 5: Commit**
@@ -1297,7 +1456,7 @@ describe('simulation', () => {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `npx vitest run src/game/simulation.test.ts`
+Run: `pnpm exec vitest run src/game/simulation.test.ts`
 Expected: FAIL — module not found.
 
 - [ ] **Step 3: Implement `src/game/simulation.ts`**
@@ -1444,12 +1603,12 @@ export function update(
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `npx vitest run src/game/simulation.test.ts`
+Run: `pnpm exec vitest run src/game/simulation.test.ts`
 Expected: PASS.
 
 - [ ] **Step 5: Run the full test suite**
 
-Run: `npm test`
+Run: `pnpm test`
 Expected: all suites PASS.
 
 - [ ] **Step 6: Commit**
@@ -1494,7 +1653,7 @@ describe('camera', () => {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `npx vitest run src/render/camera.test.ts`
+Run: `pnpm exec vitest run src/render/camera.test.ts`
 Expected: FAIL — module not found.
 
 - [ ] **Step 3: Implement `src/render/camera.ts`**
@@ -1523,7 +1682,7 @@ export function worldToScreen(cam: Camera, p: Vec2): Vec2 {
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `npx vitest run src/render/camera.test.ts`
+Run: `pnpm exec vitest run src/render/camera.test.ts`
 Expected: PASS.
 
 - [ ] **Step 5: Commit**
@@ -1592,7 +1751,7 @@ describe('persistence', () => {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `npx vitest run src/persistence/storage.test.ts`
+Run: `pnpm exec vitest run src/persistence/storage.test.ts`
 Expected: FAIL — module not found.
 
 - [ ] **Step 3: Implement `src/persistence/storage.ts`**
@@ -1646,7 +1805,7 @@ export function setMouseControl(on: boolean): void {
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `npx vitest run src/persistence/storage.test.ts`
+Run: `pnpm exec vitest run src/persistence/storage.test.ts`
 Expected: PASS.
 
 - [ ] **Step 5: Commit**
@@ -1777,7 +1936,7 @@ export function drawSnake(
 
 - [ ] **Step 2: Type-check, then commit**
 
-Run: `npx tsc --noEmit`
+Run: `pnpm exec tsc --noEmit`
 Expected: no errors.
 
 ```bash
@@ -1842,7 +2001,7 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState, cam: Cam
 
 - [ ] **Step 2: Type-check, then commit**
 
-Run: `npx tsc --noEmit`
+Run: `pnpm exec tsc --noEmit`
 Expected: no errors.
 
 ```bash
@@ -1967,7 +2126,7 @@ export class Controls {
 
 - [ ] **Step 2: Type-check, then commit**
 
-Run: `npx tsc --noEmit`
+Run: `pnpm exec tsc --noEmit`
 Expected: no errors.
 
 ```bash
@@ -2230,7 +2389,7 @@ export function showGameOver(
 
 - [ ] **Step 4: Type-check, then commit**
 
-Run: `npx tsc --noEmit`
+Run: `pnpm exec tsc --noEmit`
 Expected: no errors.
 
 ```bash
@@ -2276,7 +2435,7 @@ describe('AudioManager mute state', () => {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `npx vitest run src/audio/audio.test.ts`
+Run: `pnpm exec vitest run src/audio/audio.test.ts`
 Expected: FAIL — module not found.
 
 - [ ] **Step 3: Implement `src/audio/audio.ts`**
@@ -2431,12 +2590,12 @@ export class AudioManager {
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `npx vitest run src/audio/audio.test.ts`
+Run: `pnpm exec vitest run src/audio/audio.test.ts`
 Expected: PASS.
 
 - [ ] **Step 5: Type-check**
 
-Run: `npx tsc --noEmit`
+Run: `pnpm exec tsc --noEmit`
 Expected: no errors.
 
 - [ ] **Step 6: Commit**
@@ -2586,12 +2745,12 @@ main();
 
 - [ ] **Step 2: Type-check**
 
-Run: `npx tsc --noEmit`
+Run: `pnpm exec tsc --noEmit`
 Expected: no errors.
 
 - [ ] **Step 3: Run the game and verify the happy path**
 
-Run: `npm run dev`, open the printed URL in a desktop browser.
+Run: `pnpm dev`, open the printed URL in a desktop browser.
 On the start screen tick **Mouse control (desktop testing)**, then verify by playing
 (mouse to steer, click to boost; arrow keys/WASD + space also work):
 - Start screen shows title, difficulty chips, skin swatches, and the mouse-control toggle; selecting/checking them updates the UI.
@@ -2609,7 +2768,7 @@ On the start screen tick **Mouse control (desktop testing)**, then verify by pla
 
 - [ ] **Step 5: Run full automated suite**
 
-Run: `npm test`
+Run: `pnpm test`
 Expected: all suites PASS.
 
 - [ ] **Step 6: Commit**
@@ -2698,18 +2857,18 @@ git commit -m "feat: wire screens, loop, simulation, render into a playable game
 
 - [ ] **Step 3: Generate the icons**
 
-Run: `npm run dev`, open `http://localhost:5173/tools/make-icons.html` (adjust port to what Vite prints).
+Run: `pnpm dev`, open `http://localhost:5173/tools/make-icons.html` (adjust port to what Vite prints).
 Click all three buttons; move the downloaded files into `public/icons/`.
 Verify: `ls public/icons/` shows `icon-192.png`, `icon-512.png`, `apple-touch-icon.png`.
 
 - [ ] **Step 4: Build the production PWA**
 
-Run: `npm run build`
+Run: `pnpm build`
 Expected: `dist/` is produced with `sw.js`/workbox files, `manifest.webmanifest`, and hashed assets. No TypeScript errors.
 
 - [ ] **Step 5: Preview the production build and confirm installability**
 
-Run: `npm run preview` (it prints a `--host` URL reachable on your network).
+Run: `pnpm preview` (it prints a `--host` URL reachable on your network).
 In Chrome desktop DevTools → Application → Manifest: confirm the manifest loads, icons resolve, and a service worker is registered. Toggle "Offline" in the Network tab and reload — the game still loads.
 
 - [ ] **Step 6: Commit**
@@ -2727,7 +2886,7 @@ git commit -m "feat: add PWA manifest, icons, and offline service worker"
 
 - [ ] **Step 1: Serve the build on your home network**
 
-Run: `npm run build && npm run preview`
+Run: `pnpm build && pnpm preview`
 Note the LAN URL Vite prints (e.g. `http://192.168.x.x:4173`). Your Mac and the iPad must be on the same wifi.
 (Alternative for permanence: copy `dist/` to any free static host — no backend is needed.)
 
@@ -2747,7 +2906,7 @@ On the iPad, open the LAN URL in **Safari** → Share → **Add to Home Screen**
 
 - [ ] **Step 4: Final full-suite run**
 
-Run: `npm test && npx tsc --noEmit && npm run build`
+Run: `pnpm test && pnpm exec tsc --noEmit && pnpm build`
 Expected: tests pass, no type errors, build succeeds.
 
 - [ ] **Step 5: Commit any final tweaks**
