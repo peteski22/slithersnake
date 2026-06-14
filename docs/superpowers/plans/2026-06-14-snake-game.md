@@ -1439,7 +1439,8 @@ describe('simulation', () => {
   it('kills the player on a border crossing and bursts food', () => {
     const st = createGame('normal', 'pink', seedRng);
     const player = st.snakes.find((s) => s.id === PLAYER_ID)!;
-    player.segments[0] = { x: st.world.width / 2 + 50, y: 0 };
+    player.spawnGraceTicks = 0; // disable spawn invulnerability for this test
+    player.path[0] = { x: st.world.width / 2 + 50, y: 0 }; // head is driven by path[0]
     const foodBefore = st.food.length;
     update(st, 1 / 60, { steerAngle: null, boost: false }, DIFFICULTIES.normal, seedRng);
     expect(player.alive).toBe(false);
@@ -1449,7 +1450,8 @@ describe('simulation', () => {
   it('border is deadly on easy too (rules are difficulty-independent)', () => {
     const st = createGame('easy', 'pink', seedRng);
     const player = st.snakes.find((s) => s.id === PLAYER_ID)!;
-    player.segments[0] = { x: st.world.width / 2 + 50, y: 0 };
+    player.spawnGraceTicks = 0; // disable spawn invulnerability for this test
+    player.path[0] = { x: st.world.width / 2 + 50, y: 0 }; // head is driven by path[0]
     update(st, 1 / 60, { steerAngle: null, boost: false }, DIFFICULTIES.easy, seedRng);
     expect(player.alive).toBe(false);
   });
@@ -1536,6 +1538,11 @@ export function update(
 ): void {
   state.tick++;
 
+  // Spawn invulnerability counts down while the body grows out from the spawn point.
+  for (const s of state.snakes) {
+    if (s.alive && s.spawnGraceTicks > 0) s.spawnGraceTicks--;
+  }
+
   // 1) Choose target headings + boost intent for every snake.
   for (const s of state.snakes) {
     if (!s.alive) continue;
@@ -1574,15 +1581,16 @@ export function update(
   }
 
   // 4) Collisions. The border is ALWAYS deadly (every difficulty); then body hits.
+  // Snakes inside their spawn-grace window are invulnerable (skip them as victims).
   for (const s of state.snakes) {
-    if (!s.alive) continue;
+    if (!s.alive || s.spawnGraceTicks > 0) continue;
     if (headOutsideBorder(s, state.world)) {
       s.alive = false;
       burstFromSnake(state, s);
     }
   }
   for (const s of state.snakes) {
-    if (!s.alive) continue;
+    if (!s.alive || s.spawnGraceTicks > 0) continue;
     for (const other of state.snakes) {
       if (!other.alive) continue;
       if (headHitsSnake(s, other)) {
