@@ -136,7 +136,7 @@ controls.setMouseMode(true); // desktop testing: drive with the mouse
 
 const state: GameState = {
   world: { width: WORLD_WIDTH, height: WORLD_HEIGHT },
-  snakes: [createSnake({ id: 'player', name: 'You', isPlayer: true, skinId: 'pink', pos: { x: 0, y: 0 }, heading: 0 })],
+  snakes: [createSnake({ id: 'player', name: 'You', isPlayer: true, skinId: 'pink', pos: { x: 0, y: 0 }, heading: Math.random() * Math.PI * 2 })],
   food: [],
   nextFoodId: 1,
   tick: 0,
@@ -532,7 +532,7 @@ No test (pure declarations). These are consumed and thereby exercised by later t
 // All tunable gameplay numbers live here so balancing is a one-file change.
 
 // Body shape
-export const SEGMENT_SPACING = 14;    // world units between body points (spaced but still overlapping)
+export const SEGMENT_SPACING = 17;    // world units between body points (spaced but still overlapping)
 export const START_SEGMENTS = 8;      // body points at spawn
 export const BASE_RADIUS = 9;         // segment radius (px world units) at mass 0
 export const GIRTH_FACTOR = 1.3;      // radius added per sqrt(mass)
@@ -554,7 +554,7 @@ export const DEATH_FOOD_SPACING = 14; // gap between pellets dropped by a dead s
 export const DEATH_FOOD_VALUE = 2;    // mass per death pellet (glowing/big)
 
 // Boost
-export const MIN_BOOST_MASS = 14;     // can't boost below this
+export const MIN_BOOST_MASS = 12;     // = START_MASS; can't boost once shrunk to the starting size
 export const BOOST_DRAIN = 6;         // mass/sec lost while boosting
 export const BOOST_MULTIPLIER = 1.8;  // speed multiplier while boosting
 export const BOOST_DROP_INTERVAL = 0.15; // seconds between dropped pellets while boosting
@@ -1419,7 +1419,9 @@ describe('simulation', () => {
     const st = createGame('normal', 'pink', seedRng);
     const player = st.snakes.find((s) => s.id === PLAYER_ID)!;
     const startX = player.segments[0].x;
-    for (let i = 0; i < 30; i++) {
+    // The player spawns at a random heading, so run a full second: enough to turn to
+    // heading 0 (east) and then make clear net eastward progress regardless of start angle.
+    for (let i = 0; i < 60; i++) {
       update(st, 1 / 60, { steerAngle: 0, boost: false }, DIFFICULTIES.normal, seedRng);
     }
     expect(player.segments[0].x).toBeGreaterThan(startX);
@@ -1501,7 +1503,7 @@ export function createGame(difficulty: Difficulty, playerSkinId: string, rng: ()
 
   state.snakes.push(createSnake({
     id: PLAYER_ID, name: 'You', isPlayer: true, skinId: playerSkinId,
-    pos: vec(0, 0), heading: 0,
+    pos: vec(0, 0), heading: rng() * Math.PI * 2,
   }));
 
   for (let i = 0; i < settings.botCount; i++) {
@@ -1925,7 +1927,7 @@ export function drawSnake(
   // crown for the King
   if (isKing) {
     const cx = head.x + dir.x * r * 0.2;
-    const cy = head.y + dir.y * r * 0.2 - r * 1.6;
+    const cy = head.y + dir.y * r * 0.2 - r * 2.4;
     ctx.fillStyle = '#ffd23f';
     ctx.strokeStyle = '#d99e00';
     ctx.lineWidth = 1;

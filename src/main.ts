@@ -24,7 +24,7 @@ controls.setMouseMode(true); // desktop testing: drive with the mouse
 
 const state: GameState = {
   world: { width: WORLD_WIDTH, height: WORLD_HEIGHT },
-  snakes: [createSnake({ id: 'player', name: 'You', isPlayer: true, skinId: 'pink', pos: { x: 0, y: 0 }, heading: 0 })],
+  snakes: [createSnake({ id: 'player', name: 'You', isPlayer: true, skinId: 'pink', pos: { x: 0, y: 0 }, heading: Math.random() * Math.PI * 2 })],
   food: [],
   nextFoodId: 1,
   tick: 0,

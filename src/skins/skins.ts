@@ -90,7 +90,7 @@ export function drawSnake(
   // crown for the King
   if (isKing) {
     const cx = head.x + dir.x * r * 0.2;
-    const cy = head.y + dir.y * r * 0.2 - r * 1.6;
+    const cy = head.y + dir.y * r * 0.2 - r * 2.4;
     ctx.fillStyle = '#ffd23f';
     ctx.strokeStyle = '#d99e00';
     ctx.lineWidth = 1;
