@@ -41,7 +41,12 @@ const BOT_NAMES = [
 ];
 const SKIN_IDS = ['pink', 'blue', 'green', 'dragon', 'dog', 'rainbow', 'sun', 'mint'];
 
-export function createGame(difficulty: Difficulty, playerSkinId: string, rng: () => number): GameState {
+export function createGame(
+  difficulty: Difficulty,
+  playerSkinId: string,
+  rng: () => number,
+  playerName = 'You',
+): GameState {
   const settings = DIFFICULTIES[difficulty];
   const state: GameState = {
     world: { width: WORLD_WIDTH, height: WORLD_HEIGHT },
@@ -52,7 +57,7 @@ export function createGame(difficulty: Difficulty, playerSkinId: string, rng: ()
   };
 
   state.snakes.push(createSnake({
-    id: PLAYER_ID, name: 'You', isPlayer: true, skinId: playerSkinId,
+    id: PLAYER_ID, name: playerName, isPlayer: true, skinId: playerSkinId,
     pos: vec(0, 0), heading: rng() * Math.PI * 2,
   }));
 
@@ -65,11 +70,30 @@ export function createGame(difficulty: Difficulty, playerSkinId: string, rng: ()
       skinId: SKIN_IDS[i % SKIN_IDS.length],
       pos,
       heading: rng() * Math.PI * 2,
+      // Enemies are already in the arena at varied sizes (biased small) to bootstrap play.
+      mass: START_MASS + Math.floor(rng() * rng() * 80),
+      grown: true,
     }));
   }
 
   replenishFood(state, rng);
   return state;
+}
+
+/**
+ * Drop a fresh (small) player into the EXISTING world — bots and food are untouched, so
+ * enemies keep their sizes. Used for "continue/respawn" after death (vs. a full restart).
+ */
+export function respawnPlayer(state: GameState, rng: () => number, name = 'You', skinId?: string): void {
+  const idx = state.snakes.findIndex((s) => s.id === PLAYER_ID);
+  const old = idx >= 0 ? state.snakes[idx] : undefined;
+  const fresh = createSnake({
+    id: PLAYER_ID, name, isPlayer: true,
+    skinId: skinId ?? old?.skinId ?? 'pink',
+    pos: safeSpawnPoint(state, rng), heading: rng() * Math.PI * 2,
+  });
+  if (idx >= 0) state.snakes[idx] = fresh;
+  else state.snakes.push(fresh);
 }
 
 function speedFor(s: Snake): number {

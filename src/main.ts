@@ -1,5 +1,5 @@
 import './style.css';
-import { createGame, update, PLAYER_ID } from './game/simulation';
+import { createGame, update, respawnPlayer, PLAYER_ID } from './game/simulation';
 import { DIFFICULTIES } from './config/difficulty';
 import { Controls } from './input/controls';
 import { makeCamera } from './render/camera';
@@ -25,9 +25,16 @@ controls.setMouseMode(true); // desktop testing
 const rng = () => Math.random();
 const settings = DIFFICULTIES.normal;
 
-let state = createGame('normal', 'pink', rng);
+let playerName = localStorage.getItem('snake.name') || 'Skiddles';
+let state = createGame('normal', 'pink', rng, playerName);
 let player = state.snakes.find((s) => s.id === PLAYER_ID)!;
 let best = 0; // session best length (until persistence lands)
+
+hud.bindName(playerName, (name) => {
+  playerName = name;
+  localStorage.setItem('snake.name', name);
+  player.name = name; // update the live snake so the leaderboard reflects it immediately
+});
 
 const FIXED_DT = 1 / 60;
 let last = performance.now();
@@ -43,8 +50,9 @@ function frame(now: number) {
   }
   best = Math.max(best, scoreOf(player));
   if (!player.alive) {
-    // instant restart for testing (final main shows a game-over screen instead)
-    state = createGame('normal', 'pink', rng);
+    // Continue/respawn: drop a fresh small player into the EXISTING world so enemies keep
+    // their sizes. (A full Restart — everyone resets — will live on the game-over screen.)
+    respawnPlayer(state, rng, playerName);
     player = state.snakes.find((s) => s.id === PLAYER_ID)!;
   }
   const cam = makeCamera(player.segments[0], window.innerWidth, window.innerHeight, 1);
