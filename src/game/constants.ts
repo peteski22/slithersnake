@@ -10,7 +10,7 @@ export const MASS_PER_SEGMENT = 4;    // mass needed to add one body point
 // Movement (same rules for every snake on every difficulty)
 export const WORLD_WIDTH = 4200;      // rectangular arena width (landscape) — identical on all difficulties
 export const WORLD_HEIGHT = 2800;     // rectangular arena height
-export const BASE_SPEED = 150;        // world units/sec for every snake
+export const BASE_SPEED = 175;        // world units/sec for every snake
 export const TURN_RATE = 8.0;         // player max turn (rad/sec) — very tight; can loop on itself
 export const BOT_TURN_RATE = 7.0;     // bot max turn (rad/sec)
 

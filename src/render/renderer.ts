@@ -27,10 +27,10 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState, cam: Cam
     }
   }
 
-  // arena border (rectangle)
+  // arena border (rectangle) — red to signal the deadly edge
   const tl = worldToScreen(cam, { x: -state.world.width / 2, y: -state.world.height / 2 });
-  ctx.lineWidth = 8;
-  ctx.strokeStyle = '#e0a85b';
+  ctx.lineWidth = 10;
+  ctx.strokeStyle = '#e23b3b';
   ctx.strokeRect(tl.x, tl.y, state.world.width * cam.zoom, state.world.height * cam.zoom);
 
   // food
