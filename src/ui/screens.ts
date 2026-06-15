@@ -1,26 +1,80 @@
+import { DIFFICULTY_ORDER, type Difficulty } from '../config/difficulty';
+
 /** What the player chose on the game-over screen. */
 export type DeathChoice = 'respawn' | 'revive' | 'restart';
 
+/** Player's start-screen selections. */
+export interface StartChoices {
+  name: string;
+  skinId: string;
+  difficulty: Difficulty;
+  mouseControl: boolean;
+}
+
+interface SkinOption {
+  id: string;
+  name: string;
+  body: string;
+}
+
 /**
  * Full-screen overlay dialogs (start + game over) drawn over the canvas. The start screen's
- * Play button also serves as the first user gesture that unlocks audio.
+ * Play button doubles as the first user gesture that unlocks audio.
  */
 export class Screens {
   constructor(private mount: HTMLElement) {}
 
-  /** Show the start screen; resolves when the player presses Play (a user gesture). */
-  showStart(best: number): Promise<void> {
+  /** Show the start screen with pickers; resolves with the chosen options when Play is pressed. */
+  showStart(opts: { best: number; initial: StartChoices; skins: SkinOption[] }): Promise<StartChoices> {
     return new Promise((resolve) => {
+      let { skinId, difficulty } = opts.initial;
       this.mount.innerHTML = `
         <div class="screen">
           <div class="screen-title">🐍 Slither Slink</div>
           <div class="screen-tagline">Snake</div>
-          <div class="screen-sub">${best > 0 ? `Best score: ${best}` : 'Eat, grow, and rule the board.'}</div>
+          <div class="screen-sub">${opts.best > 0 ? `Best score: ${opts.best}` : 'Eat, grow, and rule the board.'}</div>
+          <input class="start-name" id="start-name" maxlength="14" placeholder="Your snake's name" aria-label="Snake name" />
+          <div class="start-label">Difficulty</div>
+          <div class="start-row" id="start-diffs">
+            ${DIFFICULTY_ORDER.map((d) => `<button class="chip" data-diff="${d}">${d}</button>`).join('')}
+          </div>
+          <div class="start-label">Your snake</div>
+          <div class="start-row" id="start-skins">
+            ${opts.skins.map((s) => `<button class="skin-swatch" data-skin="${s.id}" style="background:${s.body}" aria-label="${s.name}"></button>`).join('')}
+          </div>
+          <label class="start-toggle"><input type="checkbox" id="start-mouse" /> Mouse control (desktop)</label>
           <button class="btn" id="screen-play">Play</button>
         </div>`;
+
+      const nameEl = this.mount.querySelector('#start-name') as HTMLInputElement;
+      nameEl.value = opts.initial.name;
+      const mouseEl = this.mount.querySelector('#start-mouse') as HTMLInputElement;
+      mouseEl.checked = opts.initial.mouseControl;
+
+      const sync = () => {
+        this.mount.querySelectorAll('[data-diff]').forEach((el) =>
+          el.classList.toggle('selected', el.getAttribute('data-diff') === difficulty));
+        this.mount.querySelectorAll('[data-skin]').forEach((el) =>
+          el.classList.toggle('selected', el.getAttribute('data-skin') === skinId));
+      };
+      sync();
+
+      this.mount.querySelector('#start-diffs')!.addEventListener('click', (e) => {
+        const d = (e.target as HTMLElement).getAttribute('data-diff');
+        if (d) { difficulty = d as Difficulty; sync(); }
+      });
+      this.mount.querySelector('#start-skins')!.addEventListener('click', (e) => {
+        const s = (e.target as HTMLElement).getAttribute('data-skin');
+        if (s) { skinId = s; sync(); }
+      });
       this.mount.querySelector('#screen-play')!.addEventListener('click', () => {
         this.clear();
-        resolve();
+        resolve({
+          name: nameEl.value.trim() || 'You',
+          skinId,
+          difficulty,
+          mouseControl: mouseEl.checked,
+        });
       });
     });
   }

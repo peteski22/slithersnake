@@ -18,7 +18,6 @@ export class Hud {
   constructor(mount: HTMLElement) {
     this.root = mount;
     this.root.innerHTML = `
-      <input class="name-input" id="hud-name" maxlength="14" placeholder="name" aria-label="Snake name" />
       <button class="mute-btn" id="hud-mute" aria-label="Toggle sound">🔊</button>
       <div class="score-pill" id="hud-score"></div>
       <div class="leaderboard">
@@ -28,13 +27,6 @@ export class Hud {
     `;
     this.scoreEl = this.root.querySelector('#hud-score')!;
     this.boardEl = this.root.querySelector('#hud-board')!;
-  }
-
-  /** Wire the name field: shows `initial` and calls `onChange` (with a non-empty name) on edit. */
-  bindName(initial: string, onChange: (name: string) => void): void {
-    const input = this.root.querySelector('#hud-name') as HTMLInputElement;
-    input.value = initial;
-    input.addEventListener('input', () => onChange(input.value.trim() || 'You'));
   }
 
   /** Wire the mute button: shows the icon for `muted` and calls `onToggle` with the new state. */

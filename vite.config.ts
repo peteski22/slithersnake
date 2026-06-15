@@ -16,6 +16,5 @@ export default defineConfig({
   ],
   test: {
     environment: 'node',
-    environmentMatchGlobs: [['**/storage.test.ts', 'jsdom']],
   },
 });
