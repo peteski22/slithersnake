@@ -197,16 +197,22 @@ export function update(
     }
   }
   for (const s of state.snakes) {
-    if (!s.alive || s.spawnGraceTicks > 0) continue;
+    if (!s.alive) continue;
     for (const other of state.snakes) {
-      if (other === s) continue; // no self-collision: a snake may cross its own body
-      if (!other.alive) continue;
-      if (headHitsSnake(s, other)) {
-        s.alive = false;
-        other.score += POINTS_KILL; // the snake whose body was hit scores the kill
-        burstFromSnake(state, s);
-        break;
+      if (other === s || !other.alive) continue; // no self-collision
+      if (!headHitsSnake(s, other)) continue;
+      if (s.spawnGraceTicks > 0) {
+        // invulnerable: plow through — kill the snake you ram into and keep going
+        other.alive = false;
+        s.score += POINTS_KILL;
+        burstFromSnake(state, other);
+        continue;
       }
+      // normal: running your head into another's body kills you; they score the kill
+      s.alive = false;
+      other.score += POINTS_KILL;
+      burstFromSnake(state, s);
+      break;
     }
   }
 

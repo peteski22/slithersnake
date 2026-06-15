@@ -13,8 +13,8 @@ export class Screens {
     return new Promise((resolve) => {
       this.mount.innerHTML = `
         <div class="screen">
-          <div class="screen-title">🐍 Snake</div>
-          <div class="screen-tagline">Slither Slink</div>
+          <div class="screen-title">🐍 Slither Slink</div>
+          <div class="screen-tagline">Snake</div>
           <div class="screen-sub">${best > 0 ? `Best score: ${best}` : 'Eat, grow, and rule the board.'}</div>
           <button class="btn" id="screen-play">Play</button>
         </div>`;

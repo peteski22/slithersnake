@@ -8,11 +8,22 @@ import { kingId } from '../game/leaderboard';
 export function render(ctx: CanvasRenderingContext2D, state: GameState, cam: Camera): void {
   const { width, height } = cam;
 
-  // background
-  ctx.fillStyle = '#ffe3a3';
+  // outside the arena is a dark "void" so the border clearly separates play space from death
+  ctx.fillStyle = '#1f1a36';
   ctx.fillRect(0, 0, width, height);
 
-  // patterned background (world-space dots) so the snake's motion is clearly visible
+  // arena rectangle in screen space
+  const tl = worldToScreen(cam, { x: -state.world.width / 2, y: -state.world.height / 2 });
+  const aw = state.world.width * cam.zoom;
+  const ah = state.world.height * cam.zoom;
+
+  // playfield (sand + motion dots), clipped to the arena so the void stays clean
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(tl.x, tl.y, aw, ah);
+  ctx.clip();
+  ctx.fillStyle = '#ffe3a3';
+  ctx.fillRect(tl.x, tl.y, aw, ah);
   const dotSpacing = 70;
   const left = cam.focus.x - width / 2 / cam.zoom;
   const top = cam.focus.y - height / 2 / cam.zoom;
@@ -27,12 +38,12 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState, cam: Cam
       ctx.fill();
     }
   }
+  ctx.restore();
 
   // arena border (rectangle) — red to signal the deadly edge
-  const tl = worldToScreen(cam, { x: -state.world.width / 2, y: -state.world.height / 2 });
   ctx.lineWidth = 10;
   ctx.strokeStyle = '#e23b3b';
-  ctx.strokeRect(tl.x, tl.y, state.world.width * cam.zoom, state.world.height * cam.zoom);
+  ctx.strokeRect(tl.x, tl.y, aw, ah);
 
   // food
   for (const f of state.food) {

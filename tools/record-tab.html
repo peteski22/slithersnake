@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tab audio recorder</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 720px; margin: 40px auto; padding: 0 20px; line-height: 1.6; color: #1a1530; }
+    h1 { color: #ff5fa2; }
+    ol { background: #faf3ff; border: 1px solid #eadcf5; border-radius: 10px; padding: 16px 16px 16px 36px; }
+    button { font-size: 18px; font-weight: 700; padding: 10px 22px; border: none; border-radius: 10px; cursor: pointer; margin-right: 10px; }
+    #start { background: #ff7eb3; color: #fff; }
+    #stop { background: #4dabff; color: #fff; }
+    button:disabled { opacity: 0.5; cursor: default; }
+    code { background: #efeaf6; padding: 1px 6px; border-radius: 5px; }
+    #status { margin-top: 16px; font-weight: 700; }
+    pre { background: #1a1530; color: #d7c9f0; padding: 12px; border-radius: 8px; overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <h1>🎙️ Tab audio recorder</h1>
+  <p>Captures the audio of a browser tab to a file, so we can turn snake.io's sounds into
+     spectrograms and base ours on them.</p>
+  <ol>
+    <li>Open snake.io in another tab and start a game. <b>Turn its music OFF</b> in settings so only sound effects play.</li>
+    <li>Click <b>Start recording</b> below. In the picker, choose <b>the snake.io tab</b> and <b>tick “Share tab audio”</b>.</li>
+    <li>Switch to snake.io and trigger each effect once (eat a pellet, boost, die). Pauses between them help.</li>
+    <li>Come back here and click <b>Stop</b> — a <code>.webm</code> file downloads.</li>
+    <li>Move it into <code>.superpowers/refs/audio/</code> and run the spectrogram command shown after you stop.</li>
+  </ol>
+
+  <button id="start">Start recording</button>
+  <button id="stop" disabled>Stop</button>
+  <div id="status">Idle.</div>
+
+  <script>
+    let recorder = null;
+    let chunks = [];
+    let stream = null;
+    const status = document.getElementById('status');
+    const startBtn = document.getElementById('start');
+    const stopBtn = document.getElementById('stop');
+
+    startBtn.addEventListener('click', async () => {
+      try {
+        // getDisplayMedia must request video; we keep the audio track and discard video later.
+        stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+        if (stream.getAudioTracks().length === 0) {
+          status.textContent = 'No audio track — re-run and tick “Share tab audio”.';
+          stream.getTracks().forEach((t) => t.stop());
+          return;
+        }
+        chunks = [];
+        recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+        recorder.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
+        recorder.onstop = () => {
+          const blob = new Blob(chunks, { type: 'audio/webm' });
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = 'snakeio-sfx.webm';
+          a.click();
+          stream.getTracks().forEach((t) => t.stop());
+          status.innerHTML =
+            'Saved <code>snakeio-sfx.webm</code>. Now run:' +
+            '<pre>ffmpeg -i ~/Downloads/snakeio-sfx.webm -lavfi showspectrumpic=s=1500x500:legend=1 sfx_spectrogram.png\n' +
+            'ffmpeg -i ~/Downloads/snakeio-sfx.webm -lavfi showwavespic=s=1500x300 sfx_wave.png</pre>' +
+            'Put the PNGs in <code>.superpowers/refs/audio/</code>.';
+        };
+        recorder.start();
+        startBtn.disabled = true;
+        stopBtn.disabled = false;
+        status.textContent = 'Recording… trigger the sound effects in the snake.io tab.';
+      } catch (err) {
+        status.textContent = 'Could not start: ' + err;
+      }
+    });
+
+    stopBtn.addEventListener('click', () => {
+      if (recorder && recorder.state !== 'inactive') recorder.stop();
+      startBtn.disabled = false;
+      stopBtn.disabled = true;
+    });
+  </script>
+</body>
+</html>
