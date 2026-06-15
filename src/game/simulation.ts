@@ -6,6 +6,7 @@ import { createSnake, stepSnake, snakeRadius } from './snake';
 import { tryEat, attractFood, burstFromSnake, replenishFood, randomWorldPoint } from './food';
 import { headHitsSnake, headOutsideBorder } from './collision';
 import { decideHeading, decideBoost } from './bots';
+import { getSkin } from '../skins/skins';
 import {
   WORLD_WIDTH, WORLD_HEIGHT, BASE_SPEED, TURN_RATE, BOT_TURN_RATE, MIN_BOOST_MASS, BOOST_DRAIN,
   BOOST_MULTIPLIER, BOOST_DROP_INTERVAL, FOOD_VALUE, START_MASS, MIN_SPAWN_DISTANCE, POINTS_KILL,
@@ -159,7 +160,7 @@ export function update(
       if (s.boostDropTimer >= BOOST_DROP_INTERVAL) {
         s.boostDropTimer = 0;
         const tail = s.segments[s.segments.length - 1];
-        state.food.push({ id: state.nextFoodId++, pos: { ...tail }, value: FOOD_VALUE, big: false });
+        state.food.push({ id: state.nextFoodId++, pos: { ...tail }, value: FOOD_VALUE, big: false, color: getSkin(s.skinId).body });
       }
     }
   }

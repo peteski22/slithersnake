@@ -1,7 +1,7 @@
 // All tunable gameplay numbers live here so balancing is a one-file change.
 
 // Body shape
-export const SEGMENT_SPACING = 24;    // fixed world-unit gap between body sections
+export const SEGMENT_SPACING = 28;    // fixed world-unit gap between body sections
 export const START_SEGMENTS = 8;      // body points at spawn
 export const BASE_RADIUS = 9;         // segment radius (px world units) at mass 0
 export const GIRTH_FACTOR = 1.3;      // radius added per sqrt(mass)
@@ -23,8 +23,8 @@ export const DEATH_FOOD_SPACING = 34; // arc-length gap between pellets dropped 
 export const DEATH_FOOD_VALUE = 3;    // mass per death pellet (glowing/big)
 
 // Food magnetism (pellets get sucked toward a nearby head)
-export const FOOD_MAGNET_RANGE = 12;  // world units beyond the head radius that pulls food in (only when very close)
-export const FOOD_MAGNET_SPEED = 140; // world units/sec a pulled pellet drifts toward the head (gentle)
+export const FOOD_MAGNET_RANGE = 26;  // world units beyond the head radius that pulls food in
+export const FOOD_MAGNET_SPEED = 260; // world units/sec a pulled pellet accelerates toward the head
 
 // Boost
 export const MIN_BOOST_MASS = 12;     // = START_MASS; can't boost once shrunk to the starting size
