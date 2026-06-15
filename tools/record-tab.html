@@ -51,7 +51,15 @@
           return;
         }
         chunks = [];
-        recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+        // Record ONLY the audio track (recording the video stream as audio/webm fails).
+        const audioOnly = new MediaStream(stream.getAudioTracks());
+        let options;
+        if (window.MediaRecorder && MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+          options = { mimeType: 'audio/webm;codecs=opus' };
+        } else if (window.MediaRecorder && MediaRecorder.isTypeSupported('audio/webm')) {
+          options = { mimeType: 'audio/webm' };
+        }
+        recorder = options ? new MediaRecorder(audioOnly, options) : new MediaRecorder(audioOnly);
         recorder.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
         recorder.onstop = () => {
           const blob = new Blob(chunks, { type: 'audio/webm' });
