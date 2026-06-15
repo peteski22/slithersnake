@@ -14,7 +14,7 @@ export class AudioManager {
   private noteIndex = 0;
 
   private boosting = false;
-  private boostOsc: OscillatorNode | null = null;
+  private boostSrc: AudioBufferSourceNode | null = null;
   private boostGain: GainNode | null = null;
 
   // An original, cheerful groove (~120 BPM): a 16-step eighth-note melody over a bassline,
@@ -66,24 +66,49 @@ export class AudioManager {
     osc.stop(t + dur);
   }
 
+  /** A mono white-noise buffer of the given length. */
+  private makeNoise(seconds: number): AudioBuffer {
+    const ctx = this.ctx!;
+    const buf = ctx.createBuffer(1, Math.max(1, Math.floor(ctx.sampleRate * seconds)), ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+    return buf;
+  }
+
   playEat(): void {
-    this.blip(880, 0.07, 'square', 0.18);
+    this.blip(480, 0.08, 'square', 0.2); // short, low-ish plucky pop
   }
 
   playDie(): void {
     if (!this.ctx || !this.master) return;
     const t = this.ctx.currentTime;
+    // low descending boom
     const osc = this.ctx.createOscillator();
     const g = this.ctx.createGain();
     osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(400, t);
-    osc.frequency.exponentialRampToValueAtTime(60, t + 0.5);
+    osc.frequency.setValueAtTime(300, t);
+    osc.frequency.exponentialRampToValueAtTime(40, t + 0.6);
     g.gain.setValueAtTime(0.4, t);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.6);
     osc.connect(g);
     g.connect(this.master);
     osc.start(t);
-    osc.stop(t + 0.5);
+    osc.stop(t + 0.6);
+    // explosion noise burst, sweeping down through a lowpass
+    const src = this.ctx.createBufferSource();
+    src.buffer = this.makeNoise(0.4);
+    const lp = this.ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.setValueAtTime(1400, t);
+    lp.frequency.exponentialRampToValueAtTime(140, t + 0.4);
+    const ng = this.ctx.createGain();
+    ng.gain.setValueAtTime(0.3, t);
+    ng.gain.exponentialRampToValueAtTime(0.0001, t + 0.4);
+    src.connect(lp);
+    lp.connect(ng);
+    ng.connect(this.master);
+    src.start(t);
+    src.stop(t + 0.4);
   }
 
   playKing(): void {
@@ -98,21 +123,31 @@ export class AudioManager {
     this.boosting = on;
     if (!this.ctx || !this.master) return;
     if (on) {
-      const osc = this.ctx.createOscillator();
+      // broadband "whoosh": looping white noise through a bandpass, faded in
+      const src = this.ctx.createBufferSource();
+      src.buffer = this.makeNoise(1);
+      src.loop = true;
+      const bp = this.ctx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = 900;
+      bp.Q.value = 0.7;
       const g = this.ctx.createGain();
-      osc.type = 'sawtooth';
-      osc.frequency.value = 220;
-      g.gain.value = 0.1;
-      osc.connect(g);
+      const t = this.ctx.currentTime;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.linearRampToValueAtTime(0.09, t + 0.05);
+      src.connect(bp);
+      bp.connect(g);
       g.connect(this.master);
-      osc.start();
-      this.boostOsc = osc;
+      src.start();
+      this.boostSrc = src;
       this.boostGain = g;
-    } else if (this.boostOsc) {
-      this.boostOsc.stop();
-      this.boostOsc.disconnect();
-      this.boostGain?.disconnect();
-      this.boostOsc = null;
+    } else if (this.boostSrc) {
+      const t = this.ctx.currentTime;
+      this.boostGain?.gain.cancelScheduledValues(t);
+      this.boostGain?.gain.setValueAtTime(this.boostGain?.gain.value ?? 0.09, t);
+      this.boostGain?.gain.linearRampToValueAtTime(0.0001, t + 0.08);
+      this.boostSrc.stop(t + 0.1);
+      this.boostSrc = null;
       this.boostGain = null;
     }
   }
