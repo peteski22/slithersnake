@@ -17,9 +17,11 @@ export class AudioManager {
   private boostOsc: OscillatorNode | null = null;
   private boostGain: GainNode | null = null;
 
-  // An original, cheerful 8-step loop (note frequencies in Hz).
-  private readonly melody = [523, 659, 784, 659, 587, 698, 587, 494];
-  private readonly stepDur = 0.18;
+  // An original, cheerful groove (~120 BPM): a 16-step eighth-note melody over a bassline,
+  // in the spirit of snake.io's upbeat, bass-driven loop. Frequencies in Hz.
+  private readonly melody = [523, 659, 784, 659, 440, 523, 659, 523, 587, 698, 880, 698, 392, 494, 587, 494];
+  private readonly bass = [131, 110, 147, 98]; // C3, A2, D3, G2 — one per beat (every 4 steps)
+  private readonly stepDur = 0.24;
 
   constructor(muted = false) {
     this.muted = muted;
@@ -115,26 +117,34 @@ export class AudioManager {
     }
   }
 
+  private scheduleTone(freq: number, t: number, dur: number, type: OscillatorType, vol: number): void {
+    if (!this.ctx || !this.master) return;
+    const osc = this.ctx.createOscillator();
+    const g = this.ctx.createGain();
+    osc.type = type;
+    osc.frequency.value = freq;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(vol, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    osc.connect(g);
+    g.connect(this.master);
+    osc.start(t);
+    osc.stop(t + dur);
+  }
+
   startMusic(): void {
     if (!this.ctx || !this.master || this.musicTimer !== null) return;
     this.nextNoteTime = this.ctx.currentTime;
     this.noteIndex = 0;
     const schedule = () => {
       if (!this.ctx || !this.master) return;
-      while (this.nextNoteTime < this.ctx.currentTime + 0.2) {
-        const f = this.melody[this.noteIndex % this.melody.length];
+      while (this.nextNoteTime < this.ctx.currentTime + 0.25) {
+        const step = this.noteIndex % this.melody.length;
         const t = this.nextNoteTime;
-        const osc = this.ctx.createOscillator();
-        const g = this.ctx.createGain();
-        osc.type = 'triangle';
-        osc.frequency.value = f;
-        g.gain.setValueAtTime(0.0001, t);
-        g.gain.linearRampToValueAtTime(0.06, t + 0.02);
-        g.gain.exponentialRampToValueAtTime(0.0001, t + this.stepDur * 0.9);
-        osc.connect(g);
-        g.connect(this.master);
-        osc.start(t);
-        osc.stop(t + this.stepDur);
+        this.scheduleTone(this.melody[step], t, this.stepDur * 0.85, 'triangle', 0.055);
+        if (step % 4 === 0) {
+          this.scheduleTone(this.bass[(step / 4) % this.bass.length], t, this.stepDur * 3.6, 'square', 0.05);
+        }
         this.nextNoteTime += this.stepDur;
         this.noteIndex++;
       }
