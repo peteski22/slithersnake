@@ -195,9 +195,16 @@ iPad → **Add to Home Screen** → full-screen offline app icon thereafter. Hos
 be chosen at deploy time (e.g. serving from the Mac over home wifi, or any free static host);
 no backend is required.
 
-## Open questions / future ideas (out of scope for v1)
+## Open questions / future ideas
 
-- Optional score-milestone skin unlocks for added replay motivation.
-- **Revive on death** (vs. restart): the snake re-emerges from a single spot and grows
-  out to its previous length, so you keep your size instead of starting over.
-- Additional game modes.yeah f
+Already built since the original plan: Revive-on-death, start + game-over screens, audio
+(music + SFX), score decoupled from length, the off-screen King tracker, and persistence.
+
+Still planned / backlog:
+- **Settings toggles** (Part 2): background **theme** (ours ↔ an alternate field) and an enemy
+  **skin "edition"** — a distinct second skin set (neutrally named, not snake.io-branded).
+- **Kill count** on the HUD and game-over screen.
+- **Achievements** for milestones — score thresholds, kill counts, becoming King, surviving
+  a while, etc.
+- **Special-edition skin unlocks** (e.g. "Otis", "Ray") earned via achievements/score milestones.
+- Additional game modes.

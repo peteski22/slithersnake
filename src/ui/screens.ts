@@ -26,7 +26,6 @@ export class Screens {
       this.mount.innerHTML = `
         <div class="screen">
           <div class="screen-title">🐍 Slither Slink</div>
-          <div class="screen-tagline">Snake</div>
           <div class="screen-sub">${opts.best > 0 ? `Best score: ${opts.best}` : 'Eat, grow, and rule the board.'}</div>
           <input class="start-name" id="start-name" maxlength="14" placeholder="Your snake's name" aria-label="Snake name" />
           <div class="start-label">Difficulty</div>
