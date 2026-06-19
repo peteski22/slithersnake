@@ -28,31 +28,18 @@ pnpm build        # production build into dist/ (this is the installable PWA)
 pnpm preview      # serve the production build (use --host to reach it from a tablet)
 ```
 
-## Building & deploying
+## Deploying
 
-```bash
-pnpm build
-```
+Pushes to `main` auto-deploy to **GitHub Pages** via the `.github/workflows/deploy.yml`
+action. The live site is at **[slitherslink.online](https://slitherslink.online)**.
 
-This produces a `dist/` folder of **plain static files** — `index.html`, hashed JS/CSS, the
-PWA `manifest.webmanifest`, and a generated service worker. There is **no backend**: the game
-runs entirely in the browser.
+The build produces a `dist/` folder of plain static files — `index.html`, hashed JS/CSS, the
+PWA `manifest.webmanifest`, a service worker that precaches the whole game, and the app icon.
+There is **no backend**: the game runs entirely in the browser.
 
-To deploy, just serve `dist/` from any static host:
-
-- **Drag-and-drop / CLI hosts** — Netlify, Vercel, Cloudflare Pages, GitHub Pages: point them at
-  this repo with build command `pnpm build` and publish directory `dist`, or upload `dist/`
-  directly.
-- **Your own server / object storage** — copy the *contents* of `dist/` to the web root (e.g.
-  `scp -r dist/* user@host:/var/www/slitherslink/`, or sync to an S3/R2 bucket behind a CDN).
-
-It must be served over **HTTPS** (required for the service worker / installability) — `localhost`
-is exempt for testing. Once it's live (e.g. at **slitherslink.online**), open it in mobile Safari/
-Chrome and **Add to Home Screen** to install it as a full-screen, offline app.
-
-The build emits the PWA `manifest.webmanifest`, an app icon, and a service worker that
-precaches the whole game, so once it has loaded over HTTPS it runs offline (airplane mode)
-and **Add to Home Screen** gives it its own icon and a full-screen, landscape launch.
+Once loaded over HTTPS it works offline (airplane mode). On a tablet, open the site in
+Safari/Chrome and **Add to Home Screen** to install it as a full-screen, landscape app with
+its own icon.
 
 ## Controls
 
