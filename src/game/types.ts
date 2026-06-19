@@ -18,6 +18,7 @@ export interface Snake {
   eatenBig: number;     // running count of dead-snake body pellets eaten (distinct sound cue)
   kills: number;
   boosting: boolean;
+  activePowerups: ActivePowerup[];
   alive: boolean;
   boostDropTimer: number; // internal: time accumulator for boost food drops
   spawnGraceTicks: number; // invulnerable countdown while the collapsed body extends at spawn
@@ -38,13 +39,31 @@ export interface World {
   height: number;
 }
 
+export type PowerupType = 'turbo' | 'shield' | 'magnet';
+
+export interface ActivePowerup {
+  type: PowerupType;
+  remaining: number;
+}
+
+export interface Powerup {
+  id: number;
+  pos: Vec2;
+  type: PowerupType;
+  age: number;
+}
+
 export interface GameState {
   world: World;
   snakes: Snake[];
   food: Food[];
+  powerups: Powerup[];
   nextFoodId: number;
+  nextPowerupId: number;
+  powerupSpawnTimer: number;
   tick: number;
   foodSettings?: { densityMultiplier: number; respawnRate: number };
+  powerupSettings?: { spawnInterval: number; maxOnMap: number };
 }
 
 /** Per-frame player intent produced by the input layer. */

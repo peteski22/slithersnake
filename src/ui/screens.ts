@@ -1,5 +1,6 @@
 import { DIFFICULTY_ORDER, type Difficulty } from '../config/difficulty';
 import { FOOD_MODE_ORDER, type FoodMode } from '../config/food-mode';
+import { POWERUP_MODE_ORDER, type PowerupMode } from '../config/powerup-mode';
 import type { Theme } from '../config/theme';
 import { SKINS, SKINS_NEON, SKINS_CREATURES, getSkin, drawSkinPreview } from '../skins/skins';
 
@@ -12,6 +13,7 @@ export interface StartChoices {
   skinId: string;
   difficulty: Difficulty;
   foodMode: FoodMode;
+  powerupMode: PowerupMode;
   theme: Theme;
   mouseControl: boolean;
 }
@@ -26,7 +28,7 @@ export class Screens {
   /** Show the start screen with pickers; resolves with the chosen options when Play is pressed. */
   showStart(opts: { best: number; initial: StartChoices; onPreview?: (partial: Partial<StartChoices>) => void }): Promise<StartChoices> {
     return new Promise((resolve) => {
-      let { skinId, difficulty, foodMode, theme } = opts.initial;
+      let { skinId, difficulty, foodMode, powerupMode, theme } = opts.initial;
       let activeTab: 'game' | 'snake' = 'game';
       this.mount.innerHTML = `
         <div class="screen">
@@ -50,6 +52,13 @@ export class Screens {
                 ${FOOD_MODE_ORDER.map((m) => {
                 const color = m === 'feast' ? 'green' : m === 'normal' ? 'yellow' : 'red';
                 return `<button class="chip ${color}" data-food="${m}">${m}</button>`;
+              }).join('')}
+              </div>
+              <div class="start-label">Powerups</div>
+              <div class="start-row" id="start-powerup">
+                ${POWERUP_MODE_ORDER.map((m) => {
+                const color = m === 'sparse' ? 'red' : m === 'normal' ? 'yellow' : 'green';
+                return `<button class="chip ${color}" data-powerup="${m}">${m}</button>`;
               }).join('')}
               </div>
               <div class="start-label">Background</div>
@@ -139,6 +148,8 @@ export class Screens {
           el.classList.toggle('selected', el.getAttribute('data-diff') === difficulty));
         this.mount.querySelectorAll('[data-food]').forEach((el) =>
           el.classList.toggle('selected', el.getAttribute('data-food') === foodMode));
+        this.mount.querySelectorAll('[data-powerup]').forEach((el) =>
+          el.classList.toggle('selected', el.getAttribute('data-powerup') === powerupMode));
         this.mount.querySelectorAll('[data-theme]').forEach((el) =>
           el.classList.toggle('selected', el.getAttribute('data-theme') === theme));
         this.mount.querySelectorAll('[data-skin]').forEach((el) =>
@@ -153,6 +164,10 @@ export class Screens {
       this.mount.querySelector('#start-food')!.addEventListener('click', (e) => {
         const f = (e.target as HTMLElement).closest('[data-food]')?.getAttribute('data-food');
         if (f) { foodMode = f as FoodMode; sync(); opts.onPreview?.({ foodMode }); }
+      });
+      this.mount.querySelector('#start-powerup')!.addEventListener('click', (e) => {
+        const p = (e.target as HTMLElement).closest('[data-powerup]')?.getAttribute('data-powerup');
+        if (p === 'sparse' || p === 'normal' || p === 'bountiful') { powerupMode = p; sync(); }
       });
       this.mount.querySelector('#start-theme')!.addEventListener('click', (e) => {
         const t = (e.target as HTMLElement).closest('[data-theme]')?.getAttribute('data-theme');
@@ -170,6 +185,7 @@ export class Screens {
           skinId,
           difficulty,
           foodMode,
+          powerupMode,
           theme,
           mouseControl: mouseEl.checked,
         });

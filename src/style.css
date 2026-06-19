@@ -47,6 +47,22 @@ body {
 }
 .mute-btn:hover { background: rgba(255, 255, 255, 0.3); }
 .mute-btn:active { transform: scale(0.92); }
+.powerup-bar {
+  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+  display: flex; flex-direction: column; gap: 4px; align-items: center;
+}
+.powerup-slot {
+  position: relative; width: 180px; height: 20px; border-radius: 999px;
+  overflow: hidden; background: rgba(0, 0, 0, 0.4);
+}
+.powerup-fill {
+  height: 100%; border-radius: 999px; transition: width 0.1s linear;
+}
+.powerup-label {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
 
 /* Screens (start / game over) */
 .screen {

@@ -58,6 +58,7 @@ export function createSnake(p: CreateSnakeParams): Snake {
     eatenBig: 0,
     kills: 0,
     boosting: false,
+    activePowerups: [],
     alive: true,
     boostDropTimer: 0,
     spawnGraceTicks: p.isPlayer ? SPAWN_GRACE_TICKS : 0, // only the player gets spawn invulnerability

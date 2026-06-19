@@ -49,7 +49,9 @@ export function decideHeading(
 
   // 3) Hunt — every snake for itself: chase the nearest *smaller* snake (player OR bot),
   // not the player specifically, so high difficulty isn't everyone ganging up on the player.
-  if (rng() < settings.aggression) {
+  // Shielded bots are always aggressive.
+  const aggro = bot.activePowerups.some((p) => p.type === 'shield') ? 1 : settings.aggression;
+  if (rng() < aggro) {
     let prey: Snake | null = null;
     let preyDist = Infinity;
     for (const other of state.snakes) {
@@ -65,7 +67,18 @@ export function decideHeading(
     }
   }
 
-  // 4) Seek food — prefer a nearby big (dead-snake) pellet; it's worth more, so rush the
+  // 4) Seek nearby powerups (weighted by cunning).
+  if (rng() < settings.cunning) {
+    let puGoal: Vec2 | null = null;
+    let puDist = Infinity;
+    for (const pu of state.powerups) {
+      const d = distance(headPos, pu.pos);
+      if (d < 400 && d < puDist) { puDist = d; puGoal = pu.pos; }
+    }
+    if (puGoal) return angleOf(sub(puGoal, headPos));
+  }
+
+  // 5) Seek food — prefer a nearby big (dead-snake) pellet; it's worth more, so rush the
   // remains when a snake dies. Otherwise head for the nearest pellet of any kind.
   let bigGoal: Vec2 | null = null;
   let bigDist = Infinity;
@@ -79,7 +92,7 @@ export function decideHeading(
   const seek = bigGoal ?? anyGoal;
   if (seek) return angleOf(sub(seek, headPos));
 
-  // 5) Wander: keep current heading with a small random nudge.
+  // 6) Wander: keep current heading with a small random nudge.
   return bot.heading + (rng() - 0.5) * 0.4;
 }
 

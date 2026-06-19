@@ -9,7 +9,7 @@ import { DIFFICULTIES } from '../config/difficulty';
 import { MIN_BOOST_MASS } from './constants';
 
 function state(width = 2000, height = 2000): GameState {
-  return { world: { width, height }, snakes: [], food: [], nextFoodId: 1, tick: 0 };
+  return { world: { width, height }, snakes: [], food: [], powerups: [], nextFoodId: 1, nextPowerupId: 1, powerupSpawnTimer: 0, tick: 0 };
 }
 
 describe('bot AI', () => {

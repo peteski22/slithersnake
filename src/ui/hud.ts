@@ -1,5 +1,6 @@
-import type { GameState } from '../game/types';
+import type { GameState, PowerupType } from '../game/types';
 import { ranking, scoreOf, kingId } from '../game/leaderboard';
+import { TURBO_DURATION, SHIELD_DURATION, MAGNET_DURATION } from '../game/constants';
 
 /** Don't replay the "You're the King!" flash more often than this (avoids respam at #1/#2). */
 const KING_FLASH_COOLDOWN_MS = 9000;
@@ -12,6 +13,7 @@ export class Hud {
   private root: HTMLElement;
   private scoreEl: HTMLElement;
   private boardEl: HTMLElement;
+  private powerupEl: HTMLElement;
   private wasKing = false;
   private lastFlashAt = -Infinity;
 
@@ -24,9 +26,11 @@ export class Hud {
         <h4>Leaderboard</h4>
         <div id="hud-board"></div>
       </div>
+      <div class="powerup-bar hidden" id="hud-powerup"><div class="powerup-fill"></div><span class="powerup-label"></span></div>
     `;
     this.scoreEl = this.root.querySelector('#hud-score')!;
     this.boardEl = this.root.querySelector('#hud-board')!;
+    this.powerupEl = this.root.querySelector('#hud-powerup')!;
   }
 
   /** Wire the mute button: shows the icon for `muted` and calls `onToggle` with the new state. */
@@ -64,6 +68,23 @@ export class Hud {
     const isKing = king === playerId;
     if (isKing && !this.wasKing) this.flashKing();
     this.wasKing = isKing;
+
+    const pus = player?.activePowerups ?? [];
+    const maxDurations: Record<PowerupType, number> = { turbo: TURBO_DURATION, shield: SHIELD_DURATION, magnet: MAGNET_DURATION };
+    const colors: Record<PowerupType, string> = { turbo: '#ffe600', shield: '#42a5f5', magnet: '#b040ff' };
+    const icons: Record<PowerupType, string> = { turbo: '🔥', shield: '🛡', magnet: '🧲' };
+    if (pus.length > 0) {
+      this.powerupEl.innerHTML = pus.map((pu) => {
+        const pct = Math.max(0, pu.remaining / maxDurations[pu.type]) * 100;
+        return `<div class="powerup-slot">
+          <div class="powerup-fill" style="width:${pct}%;background:${colors[pu.type]}"></div>
+          <span class="powerup-label">${icons[pu.type]} ${Math.ceil(pu.remaining)}s</span>
+        </div>`;
+      }).join('');
+      this.powerupEl.classList.remove('hidden');
+    } else {
+      this.powerupEl.classList.add('hidden');
+    }
   }
 
   private flashKing(): void {

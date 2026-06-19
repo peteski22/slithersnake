@@ -1,6 +1,7 @@
 import type { Difficulty } from '../config/difficulty';
 import type { FoodMode } from '../config/food-mode';
 import type { Theme } from '../config/theme';
+import type { PowerupMode } from '../config/powerup-mode';
 
 /**
  * Thin wrapper over localStorage for the handful of values we persist between sessions.
@@ -15,6 +16,7 @@ const KEYS = {
   mouse: 'snake.mouse',
   foodMode: 'snake.foodMode',
   theme: 'snake.theme',
+  powerupMode: 'snake.powerupMode',
 } as const;
 
 export function getBest(): number {
@@ -78,3 +80,10 @@ export function setTheme(t: Theme): void {
   localStorage.setItem(KEYS.theme, t);
 }
 
+export function getPowerupMode(): PowerupMode {
+  const v = localStorage.getItem(KEYS.powerupMode);
+  return v === 'sparse' || v === 'normal' || v === 'bountiful' ? v : 'normal';
+}
+export function setPowerupMode(mode: PowerupMode): void {
+  localStorage.setItem(KEYS.powerupMode, mode);
+}

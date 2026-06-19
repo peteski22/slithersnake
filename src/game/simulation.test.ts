@@ -66,7 +66,10 @@ describe('simulation', () => {
       world: { width: 4200, height: 2800 },
       snakes: [],
       food: [],
+      powerups: [],
       nextFoodId: 1,
+      nextPowerupId: 1,
+      powerupSpawnTimer: 0,
       tick: 0,
     };
     // Bot: a horizontal line of segments near the center.

@@ -3,6 +3,7 @@ import { createGame, update, respawnPlayer, PLAYER_ID } from './game/simulation'
 import { fillFood } from './game/food';
 import { DIFFICULTIES, type Difficulty } from './config/difficulty';
 import { FOOD_MODES, type FoodMode } from './config/food-mode';
+import { POWERUP_MODES, type PowerupMode } from './config/powerup-mode';
 import type { Theme } from './config/theme';
 import type { StartChoices } from './ui/screens';
 import { Controls } from './input/controls';
@@ -44,12 +45,14 @@ let skinId = store.getSkin();
 let difficulty: Difficulty = store.getDifficulty();
 let foodMode: FoodMode = store.getFoodMode();
 let theme: Theme = store.getTheme();
+let powerupMode: PowerupMode = store.getPowerupMode();
 let mouseControl = store.getMouseControl(!isTouch); // default: mouse on desktop, touch on tablets
 let settings = DIFFICULTIES[difficulty];
 let foodSettings = FOOD_MODES[foodMode];
+let powerupSettings = POWERUP_MODES[powerupMode];
 let best = store.getBest();
 
-let state = createGame(difficulty, skinId, rng, playerName, foodSettings);
+let state = createGame(difficulty, skinId, rng, playerName, foodSettings, powerupSettings);
 let player = state.snakes.find((s) => s.id === PLAYER_ID)!;
 
 type Phase = 'start' | 'playing' | 'gameover';
@@ -65,6 +68,7 @@ let last = performance.now();
 let acc = 0;
 let prevEaten = player.eatenPellets;
 let prevEatenBig = player.eatenBig;
+let prevPowerupCount = 0;
 let wasKingAudio = false;
 let lastKingSound = -Infinity;
 
@@ -72,6 +76,11 @@ function refindPlayer(): void {
   player = state.snakes.find((s) => s.id === PLAYER_ID)!;
   prevEaten = player.eatenPellets;
   prevEatenBig = player.eatenBig;
+
+  const puCount = player.activePowerups.length;
+  if (puCount > prevPowerupCount) audio.playPowerup();
+  if (puCount < prevPowerupCount) audio.playPowerupExpire();
+  prevPowerupCount = puCount;
 }
 
 let pendingDeath: { mass: number; score: number; kills: number } | null = null;
@@ -97,7 +106,7 @@ function enterGameOver(): void {
 
 function resumeFromDeath(choice: 'revive' | 'respawn' | 'restart'): void {
   if (choice === 'restart') {
-    state = createGame(difficulty, skinId, rng, playerName, foodSettings);
+    state = createGame(difficulty, skinId, rng, playerName, foodSettings, powerupSettings);
     pendingDeath = null;
   } else if (choice === 'revive' && pendingDeath) {
     respawnPlayer(state, rng, playerName, skinId, pendingDeath.mass, pendingDeath.score, pendingDeath.kills);
@@ -185,7 +194,7 @@ function showStartScreen(): void {
   void screens
     .showStart({
       best,
-      initial: { name: playerName, skinId, difficulty, foodMode, theme, mouseControl },
+      initial: { name: playerName, skinId, difficulty, foodMode, powerupMode, theme, mouseControl },
       onPreview: (partial: Partial<StartChoices>) => {
         if (partial.theme !== undefined) theme = partial.theme;
         if (partial.foodMode !== undefined) {
@@ -215,11 +224,14 @@ function showStartScreen(): void {
       } else {
         difficulty = choices.difficulty;
         foodMode = choices.foodMode;
+        powerupMode = choices.powerupMode;
         store.setDifficulty(difficulty);
         store.setFoodMode(foodMode);
+        store.setPowerupMode(powerupMode);
         settings = DIFFICULTIES[difficulty];
         foodSettings = FOOD_MODES[foodMode];
-        state = createGame(difficulty, skinId, rng, playerName, foodSettings);
+        powerupSettings = POWERUP_MODES[powerupMode];
+        state = createGame(difficulty, skinId, rng, playerName, foodSettings, powerupSettings);
       }
       refindPlayer();
       hud.show();

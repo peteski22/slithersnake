@@ -21,9 +21,9 @@ export function makeFood(
 }
 
 /** Pull nearby food toward a snake's head so it looks magnetised/sucked in before eating. */
-export function attractFood(state: GameState, s: Snake, dt: number): void {
+export function attractFood(state: GameState, s: Snake, dt: number, magnetRange = FOOD_MAGNET_RANGE): void {
   const headPos = s.segments[0];
-  const range = snakeRadius(s) + FOOD_MAGNET_RANGE;
+  const range = snakeRadius(s) + magnetRange;
   const pull = FOOD_MAGNET_SPEED * dt;
   for (const f of state.food) {
     const d = distance(headPos, f.pos);

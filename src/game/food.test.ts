@@ -8,7 +8,7 @@ import type { GameState } from './types';
 import { FOOD_VALUE } from './constants';
 
 function blankState(): GameState {
-  return { world: { width: 2000, height: 1500 }, snakes: [], food: [], nextFoodId: 1, tick: 0 };
+  return { world: { width: 2000, height: 1500 }, snakes: [], food: [], powerups: [], nextFoodId: 1, nextPowerupId: 1, powerupSpawnTimer: 0, tick: 0 };
 }
 
 describe('food', () => {

@@ -5,6 +5,8 @@ import { worldToScreen } from './camera';
 import { drawSnake } from '../skins/skins';
 import { snakeRadius } from '../game/snake';
 import { kingId } from '../game/leaderboard';
+import { POWERUP_RADIUS } from '../game/constants';
+import type { PowerupType } from '../game/types';
 
 export function render(ctx: CanvasRenderingContext2D, state: GameState, cam: Camera, theme: Theme = 'classic'): void {
   const { width, height } = cam;
@@ -86,6 +88,30 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState, cam: Cam
     if (f.big) { ctx.shadowColor = fill; ctx.shadowBlur = 12; }
     ctx.fill();
     ctx.shadowBlur = 0;
+  }
+
+  // powerups (pulsing glow, icon)
+  const POWERUP_COLORS: Record<PowerupType, string> = { turbo: '#ffe600', shield: '#42a5f5', magnet: '#b040ff' };
+  const POWERUP_ICONS: Record<PowerupType, string> = { turbo: '🔥', shield: '🛡', magnet: '🧲' };
+  const pulse = 0.8 + 0.2 * Math.sin(state.tick * 0.15);
+  for (const pu of state.powerups) {
+    const p = worldToScreen(cam, pu.pos);
+    if (p.x < -30 || p.y < -30 || p.x > width + 30 || p.y > height + 30) continue;
+    const r = POWERUP_RADIUS * cam.zoom * pulse;
+    const color = POWERUP_COLORS[pu.type];
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 16 * pulse;
+    ctx.globalAlpha = 0.7;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.shadowBlur = 0;
+    ctx.font = `${Math.round(r * 1.2)}px system-ui, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(POWERUP_ICONS[pu.type], p.x, p.y);
   }
 
   // snakes (player drawn last so it's on top)

@@ -3,15 +3,18 @@ import type { GameState, InputState, Snake, World } from './types';
 import type { Difficulty, DifficultySettings } from '../config/difficulty';
 import { DIFFICULTIES } from '../config/difficulty';
 import type { FoodModeSettings } from '../config/food-mode';
+import type { PowerupModeSettings } from '../config/powerup-mode';
 import { ALL_SKINS } from '../skins/skins';
 import { createSnake, stepSnake, snakeRadius } from './snake';
 import { tryEat, attractFood, burstFromSnake, fillFood, replenishFood, randomWorldPoint } from './food';
 import { headHitsSnake, headOutsideBorder } from './collision';
+import { spawnPowerups, tryCollectPowerup, tickPowerups, hasPowerup } from './powerups';
 import { decideHeading, decideBoost } from './bots';
 import { getSkin } from '../skins/skins';
 import {
   WORLD_WIDTH, WORLD_HEIGHT, BASE_SPEED, TURN_RATE, BOT_TURN_RATE, MIN_BOOST_MASS, BOOST_DRAIN,
   BOOST_MULTIPLIER, BOOST_DROP_INTERVAL, FOOD_VALUE, START_MASS, MIN_SPAWN_DISTANCE, POINTS_KILL,
+  MAGNET_POWERUP_RANGE,
 } from './constants';
 
 export const PLAYER_ID = 'player';
@@ -48,6 +51,7 @@ export function createGame(
   rng: () => number,
   playerName = 'You',
   foodSettings?: FoodModeSettings,
+  powerupSettings?: PowerupModeSettings,
 ): GameState {
   const skinIds = ALL_SKINS.map((s) => s.id);
   const settings = DIFFICULTIES[difficulty];
@@ -55,9 +59,13 @@ export function createGame(
     world: { width: WORLD_WIDTH, height: WORLD_HEIGHT },
     snakes: [],
     food: [],
+    powerups: [],
     nextFoodId: 1,
+    nextPowerupId: 1,
+    powerupSpawnTimer: 0,
     tick: 0,
     foodSettings,
+    powerupSettings,
   };
 
   state.snakes.push(createSnake({
@@ -131,6 +139,8 @@ export function respawnPlayer(
 }
 
 function speedFor(s: Snake): number {
+  const turbo = hasPowerup(s, 'turbo');
+  if (turbo) return BASE_SPEED * BOOST_MULTIPLIER;
   return s.boosting ? BASE_SPEED * BOOST_MULTIPLIER : BASE_SPEED;
 }
 
@@ -168,7 +178,7 @@ export function update(
   for (const s of state.snakes) {
     if (!s.alive) continue;
     stepSnake(s, speedFor(s), dt);
-    if (s.boosting) {
+    if (s.boosting && !hasPowerup(s, 'turbo')) {
       s.mass = Math.max(START_MASS, s.mass - BOOST_DRAIN * dt);
       s.boostDropTimer += dt;
       if (s.boostDropTimer >= BOOST_DROP_INTERVAL) {
@@ -183,7 +193,9 @@ export function update(
   // derived continuously from mass in stepSnake, so no explicit growth step is needed.
   for (const s of state.snakes) {
     if (s.alive) {
-      attractFood(state, s, dt);
+      const magRange = hasPowerup(s, 'magnet') ? MAGNET_POWERUP_RANGE : undefined;
+      attractFood(state, s, dt, magRange);
+      tryCollectPowerup(state, s);
       tryEat(state, s);
     }
   }
@@ -206,8 +218,8 @@ export function update(
     for (const other of state.snakes) {
       if (other === s || !other.alive) continue; // no self-collision
       if (!headHitsSnake(s, other)) continue;
-      if (s.spawnGraceTicks > 0) {
-        // invulnerable: plow through — kill the snake you ram into and keep going
+      if (s.spawnGraceTicks > 0 || hasPowerup(s, 'shield')) {
+        // invulnerable or shielded: plow through — kill the snake you ram into
         other.alive = false;
         s.score += POINTS_KILL;
         s.kills++;
@@ -236,4 +248,8 @@ export function update(
 
   // 6) Keep ambient food topped up.
   replenishFood(state, rng, state.foodSettings);
+
+  // 7) Powerups: spawn, tick timers, despawn expired.
+  spawnPowerups(state, dt, rng, state.powerupSettings);
+  tickPowerups(state, dt);
 }

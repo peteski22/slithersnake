@@ -147,7 +147,21 @@ export function drawSnake(
     ctx.stroke();
   }
 
-  ctx.globalAlpha = 1; // reset in case spawn-grace made the snake translucent
+  const auraColors = { turbo: '#ffe600', shield: '#42a5f5', magnet: '#b040ff' };
+  for (let ai = 0; ai < s.activePowerups.length; ai++) {
+    const ac = auraColors[s.activePowerups[ai].type];
+    ctx.beginPath();
+    ctx.arc(head.x, head.y, r * (1.6 + ai * 0.4), 0, Math.PI * 2);
+    ctx.strokeStyle = ac;
+    ctx.lineWidth = 3;
+    ctx.globalAlpha = 0.5 + 0.3 * Math.sin(Date.now() * 0.008 + ai);
+    ctx.shadowColor = ac;
+    ctx.shadowBlur = 10;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+  }
+
+  ctx.globalAlpha = 1;
 }
 
 /** Draw a small horizontal preview of a skin (head at the right) to fill a picker canvas. */

@@ -76,7 +76,28 @@ export class AudioManager {
   }
 
   playEat(): void {
-    this.blip(480, 0.08, 'square', 0.2); // ambient pellet: short, plucky pop
+    this.blip(480, 0.08, 'square', 0.2);
+  }
+
+  playPowerup(): void {
+    if (!this.ctx || !this.master) return;
+    const t = this.ctx.currentTime;
+    for (let i = 0; i < 3; i++) {
+      const osc = this.ctx.createOscillator();
+      const g = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = 600 + i * 200;
+      g.gain.setValueAtTime(0.15, t + i * 0.06);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + i * 0.06 + 0.15);
+      osc.connect(g);
+      g.connect(this.master!);
+      osc.start(t + i * 0.06);
+      osc.stop(t + i * 0.06 + 0.15);
+    }
+  }
+
+  playPowerupExpire(): void {
+    this.blip(300, 0.15, 'sine', 0.12);
   }
 
   playEatBig(): void {

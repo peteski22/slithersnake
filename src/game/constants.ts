@@ -41,3 +41,13 @@ export const MIN_SPAWN_DISTANCE = 350;  // a new snake must spawn at least this 
 export const POINTS_PELLET = 1;       // eating an ambient pellet
 export const POINTS_BIG_PELLET = 2;   // eating a dead snake's (glowing) body pellet
 export const POINTS_KILL = 10;        // making another snake crash into you
+
+// Powerups
+export const POWERUP_SPAWN_INTERVAL = 18; // seconds between spawn attempts
+export const POWERUP_MAX_ON_MAP = 3;
+export const POWERUP_DESPAWN_AGE = 30;    // seconds before an uncollected powerup disappears
+export const POWERUP_RADIUS = 14;         // world units; collection radius
+export const TURBO_DURATION = 5;
+export const SHIELD_DURATION = 5;
+export const MAGNET_DURATION = 8;
+export const MAGNET_POWERUP_RANGE = 140;  // boosted magnet range (vs normal 26)
