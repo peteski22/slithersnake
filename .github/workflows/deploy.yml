@@ -16,6 +16,7 @@ concurrency:
 
 jobs:
   build-and-deploy:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -27,14 +28,14 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "22.21.1"
+          node-version: "22"
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
 
       - run: pnpm build
 
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v4
         with:
           path: dist
 
