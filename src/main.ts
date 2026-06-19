@@ -1,7 +1,10 @@
 import './style.css';
 import { createGame, update, respawnPlayer, PLAYER_ID } from './game/simulation';
+import { fillFood } from './game/food';
 import { DIFFICULTIES, type Difficulty } from './config/difficulty';
 import { FOOD_MODES, type FoodMode } from './config/food-mode';
+import type { Theme } from './config/theme';
+import type { StartChoices } from './ui/screens';
 import { Controls } from './input/controls';
 import { makeCamera } from './render/camera';
 import { render } from './render/renderer';
@@ -40,6 +43,7 @@ let playerName = store.getName();
 let skinId = store.getSkin();
 let difficulty: Difficulty = store.getDifficulty();
 let foodMode: FoodMode = store.getFoodMode();
+let theme: Theme = store.getTheme();
 let mouseControl = store.getMouseControl(!isTouch); // default: mouse on desktop, touch on tablets
 let settings = DIFFICULTIES[difficulty];
 let foodSettings = FOOD_MODES[foodMode];
@@ -137,7 +141,7 @@ function frame(now: number): void {
   }
 
   const cam = makeCamera(player.segments[0], window.innerWidth, window.innerHeight, 1);
-  render(ctx, state, cam);
+  render(ctx, state, cam, theme);
   if (phase === 'playing') {
     if (!mouseControl) drawTouchControls();
     hud.update(state, PLAYER_ID, best);
@@ -181,25 +185,34 @@ function showStartScreen(): void {
   void screens
     .showStart({
       best,
-      initial: { name: playerName, skinId, difficulty, foodMode, mouseControl },
+      initial: { name: playerName, skinId, difficulty, foodMode, theme, mouseControl },
+      onPreview: (partial: Partial<StartChoices>) => {
+        if (partial.theme !== undefined) theme = partial.theme;
+        if (partial.foodMode !== undefined) {
+          foodMode = partial.foodMode;
+          foodSettings = FOOD_MODES[foodMode];
+          state.food = state.food.filter((f) => f.big);
+          fillFood(state, rng, foodSettings);
+        }
+      },
     })
     .then((choices) => {
       playerName = choices.name;
       skinId = choices.skinId;
+      theme = choices.theme;
       mouseControl = choices.mouseControl;
       store.setName(playerName);
       store.setSkin(skinId);
+      store.setTheme(theme);
       store.setMouseControl(mouseControl);
       controls.setMouseMode(mouseControl);
       audio.resume();
       audio.startMusic();
 
       if (pendingDeath) {
-        // Came from game-over → menu: respawn into the existing world
         respawnPlayer(state, rng, playerName, skinId);
         pendingDeath = null;
       } else {
-        // Fresh start: apply difficulty/food settings and create a new game
         difficulty = choices.difficulty;
         foodMode = choices.foodMode;
         store.setDifficulty(difficulty);

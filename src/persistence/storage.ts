@@ -1,5 +1,6 @@
 import type { Difficulty } from '../config/difficulty';
 import type { FoodMode } from '../config/food-mode';
+import type { Theme } from '../config/theme';
 
 /**
  * Thin wrapper over localStorage for the handful of values we persist between sessions.
@@ -13,6 +14,7 @@ const KEYS = {
   muted: 'snake.muted',
   mouse: 'snake.mouse',
   foodMode: 'snake.foodMode',
+  theme: 'snake.theme',
 } as const;
 
 export function getBest(): number {
@@ -67,3 +69,12 @@ export function getFoodMode(): FoodMode {
 export function setFoodMode(mode: FoodMode): void {
   localStorage.setItem(KEYS.foodMode, mode);
 }
+
+export function getTheme(): Theme {
+  const v = localStorage.getItem(KEYS.theme);
+  return v === 'classic' || v === 'dark' ? v : 'classic';
+}
+export function setTheme(t: Theme): void {
+  localStorage.setItem(KEYS.theme, t);
+}
+

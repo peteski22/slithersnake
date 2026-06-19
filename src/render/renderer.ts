@@ -1,11 +1,12 @@
 import type { GameState } from '../game/types';
 import type { Camera } from './camera';
+import type { Theme } from '../config/theme';
 import { worldToScreen } from './camera';
 import { drawSnake } from '../skins/skins';
 import { snakeRadius } from '../game/snake';
 import { kingId } from '../game/leaderboard';
 
-export function render(ctx: CanvasRenderingContext2D, state: GameState, cam: Camera): void {
+export function render(ctx: CanvasRenderingContext2D, state: GameState, cam: Camera, theme: Theme = 'classic'): void {
   const { width, height } = cam;
 
   // outside the arena is a dark "void" so the border clearly separates play space from death
@@ -17,25 +18,54 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState, cam: Cam
   const aw = state.world.width * cam.zoom;
   const ah = state.world.height * cam.zoom;
 
-  // playfield (sand + motion dots), clipped to the arena so the void stays clean
+  // playfield, clipped to the arena so the void stays clean
   ctx.save();
   ctx.beginPath();
   ctx.rect(tl.x, tl.y, aw, ah);
   ctx.clip();
-  ctx.fillStyle = '#ffe3a3';
-  ctx.fillRect(tl.x, tl.y, aw, ah);
-  const dotSpacing = 70;
+
   const left = cam.focus.x - width / 2 / cam.zoom;
-  const top = cam.focus.y - height / 2 / cam.zoom;
+  const top_ = cam.focus.y - height / 2 / cam.zoom;
   const right = cam.focus.x + width / 2 / cam.zoom;
   const bottom = cam.focus.y + height / 2 / cam.zoom;
-  ctx.fillStyle = 'rgba(176, 130, 60, 0.18)';
-  for (let wx = Math.floor(left / dotSpacing) * dotSpacing; wx <= right; wx += dotSpacing) {
-    for (let wy = Math.floor(top / dotSpacing) * dotSpacing; wy <= bottom; wy += dotSpacing) {
-      const p = worldToScreen(cam, { x: wx, y: wy });
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, 2.5 * cam.zoom, 0, Math.PI * 2);
-      ctx.fill();
+
+  if (theme === 'dark') {
+    ctx.fillStyle = '#1a3a3a';
+    ctx.fillRect(tl.x, tl.y, aw, ah);
+    const hexR = 40;
+    const hexH = hexR * Math.sqrt(3);
+    const colW = hexR * 1.5;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
+    ctx.lineWidth = 1;
+    for (let col = Math.floor(left / colW) - 1; col <= Math.ceil(right / colW) + 1; col++) {
+      const cx = col * colW;
+      const offset = col % 2 === 0 ? 0 : hexH / 2;
+      for (let row = Math.floor(top_ / hexH) - 1; row <= Math.ceil(bottom / hexH) + 1; row++) {
+        const cy = row * hexH + offset;
+        const p = worldToScreen(cam, { x: cx, y: cy });
+        ctx.beginPath();
+        for (let i = 0; i < 6; i++) {
+          const a = Math.PI / 3 * i + Math.PI / 6;
+          const hx = p.x + hexR * cam.zoom * Math.cos(a);
+          const hy = p.y + hexR * cam.zoom * Math.sin(a);
+          if (i === 0) ctx.moveTo(hx, hy); else ctx.lineTo(hx, hy);
+        }
+        ctx.closePath();
+        ctx.stroke();
+      }
+    }
+  } else {
+    ctx.fillStyle = '#ffe3a3';
+    ctx.fillRect(tl.x, tl.y, aw, ah);
+    const dotSpacing = 70;
+    ctx.fillStyle = 'rgba(176, 130, 60, 0.18)';
+    for (let wx = Math.floor(left / dotSpacing) * dotSpacing; wx <= right; wx += dotSpacing) {
+      for (let wy = Math.floor(top_ / dotSpacing) * dotSpacing; wy <= bottom; wy += dotSpacing) {
+        const p = worldToScreen(cam, { x: wx, y: wy });
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 2.5 * cam.zoom, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
   }
   ctx.restore();
@@ -51,7 +81,7 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState, cam: Cam
     if (p.x < -20 || p.y < -20 || p.x > width + 20 || p.y > height + 20) continue;
     ctx.beginPath();
     ctx.arc(p.x, p.y, (f.big ? 8 : 5) * cam.zoom, 0, Math.PI * 2);
-    const fill = f.color ?? (f.big ? '#ffe600' : '#ff8c42');
+    const fill = f.color ?? (f.big ? '#ffe600' : `hsl(${(f.id * 137) % 360} 80% 58%)`);
     ctx.fillStyle = fill;
     if (f.big) { ctx.shadowColor = fill; ctx.shadowBlur = 12; }
     ctx.fill();

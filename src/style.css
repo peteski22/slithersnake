@@ -52,7 +52,7 @@ body {
 .screen {
   position: fixed; inset: 0; display: flex; flex-direction: column;
   align-items: center; justify-content: center; gap: 18px; text-align: center;
-  background: radial-gradient(circle at 50% 35%, rgba(26, 21, 48, 0.72), rgba(26, 21, 48, 0.92));
+  background: radial-gradient(circle at 50% 35%, rgba(26, 21, 48, 0.55), rgba(26, 21, 48, 0.78));
   color: #fff; padding: 24px;
 }
 .screen-title { font-size: clamp(38px, 8vw, 76px); font-weight: 900; color: #ff5fa2; text-shadow: 0 3px 0 #b3325f; line-height: 1; }
@@ -95,7 +95,7 @@ body {
 .chip.green.selected { border-color: #4ade80; background: rgba(74, 222, 128, 0.22); }
 .chip.yellow.selected { border-color: #ffe600; background: rgba(255, 230, 0, 0.22); }
 .chip.red.selected { border-color: #f87171; background: rgba(248, 113, 113, 0.22); }
-.start-skins { max-width: 420px; }
+.start-skins { max-width: 420px; gap: 6px; }
 .skin-btn {
   padding: 4px; border-radius: 12px; cursor: pointer; line-height: 0;
   border: 3px solid rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.08);
@@ -122,7 +122,19 @@ body {
 .tab.selected { color: #fff; border-bottom-color: #ffe600; }
 .tab-pane {
   display: flex; flex-direction: column; align-items: center; gap: 12px;
-  padding: 16px; height: 260px;
+  padding: 16px; height: 380px;
+}
+.skin-section {
+  width: 100%; background: rgba(0, 0, 0, 0.35); border-radius: 10px; overflow: hidden;
+}
+.skin-tabs {
+  display: flex; gap: 0; width: 100%;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+.skin-tabs .tab { font-size: 13px; padding: 7px 0; text-transform: uppercase; letter-spacing: 0.5px; }
+.skin-pane {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  width: 100%; min-height: 60px; padding: 12px 4px;
 }
 .start-toggle { display: flex; align-items: center; gap: 8px; font-size: 14px; opacity: 0.85; margin-top: 8px; }
 .king-flash {

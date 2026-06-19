@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   getBest, setBest, getName, setName, getSkin, setSkin,
   getDifficulty, setDifficulty, getMuted, setMuted, getMouseControl, setMouseControl,
+  getTheme, setTheme,
 } from './storage';
 
 // Self-contained in-memory localStorage so the test needs no DOM environment.
@@ -45,5 +46,11 @@ describe('persistence', () => {
     expect(getMouseControl(false)).toBe(false);
     setMouseControl(true);
     expect(getMouseControl(false)).toBe(true); // stored value wins over fallback
+  });
+
+  it('round-trips theme with default', () => {
+    expect(getTheme()).toBe('classic');
+    setTheme('dark');
+    expect(getTheme()).toBe('dark');
   });
 });
