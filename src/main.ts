@@ -27,6 +27,10 @@ resize();
 
 const controls = new Controls(canvas);
 const rng = () => Math.random();
+
+function safeAreaInset(side: 'top' | 'right' | 'bottom' | 'left'): number {
+  return parseFloat(getComputedStyle(document.documentElement).getPropertyValue(`--sai-${side}`)) || 0;
+}
 const isTouch = window.matchMedia('(pointer: coarse)').matches;
 
 // Player choices (seeded from storage; updated on the start screen).
@@ -127,8 +131,8 @@ function frame(now: number): void {
 function drawTouchControls(): void {
   const w = window.innerWidth;
   const h = window.innerHeight;
-  const bx = w - 72;
-  const by = h - 72;
+  const bx = w - 72 - safeAreaInset('right');
+  const by = h - 72 - safeAreaInset('bottom');
   ctx.beginPath();
   ctx.arc(bx, by, 44, 0, Math.PI * 2);
   ctx.fillStyle = controls.isBoosting ? 'rgba(255, 126, 179, 0.6)' : 'rgba(255, 255, 255, 0.14)';
