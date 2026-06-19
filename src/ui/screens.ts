@@ -38,6 +38,7 @@ export class Screens {
           </div>
           <label class="start-toggle"><input type="checkbox" id="start-mouse" /> Mouse control (desktop)</label>
           <button class="btn" id="screen-play">Play</button>
+          <a class="credit-link" href="https://buymeacoffee.com/peteski22" target="_blank" rel="noopener">Made with ♥ by peteski</a>
         </div>`;
 
       // Render a mini-snake preview into each skin button's canvas.
