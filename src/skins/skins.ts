@@ -27,7 +27,31 @@ export const SKINS: Skin[] = [
   { id: 'rainbow', name: 'Rainbow',   body: '#ff6fae', accent: '#ffffff', pattern: 'rainbow', eyes: true },
 ];
 
-export const getSkin = (id: string): Skin => SKINS.find((s) => s.id === id) ?? SKINS[0];
+export const SKINS_NEON: Skin[] = [
+  { id: 'neon-pink',   name: 'Neon Pink',   body: '#ff2d8a', accent: '#ff8ec4', pattern: 'solid',   eyes: true },
+  { id: 'neon-blue',   name: 'Neon Blue',   body: '#00c8ff', accent: '#80e4ff', pattern: 'solid',   eyes: true },
+  { id: 'neon-green',  name: 'Neon Green',  body: '#39ff14', accent: '#a3ff80', pattern: 'solid',   eyes: true },
+  { id: 'neon-orange', name: 'Neon Orange', body: '#ff6f00', accent: '#ffab40', pattern: 'solid',   eyes: true },
+  { id: 'neon-purple', name: 'Neon Purple', body: '#b040ff', accent: '#d9a0ff', pattern: 'solid',   eyes: true },
+  { id: 'neon-yellow', name: 'Neon Yellow', body: '#ffe600', accent: '#fff59d', pattern: 'solid',   eyes: true },
+  { id: 'neon-red',    name: 'Neon Red',    body: '#ff1744', accent: '#ff8a80', pattern: 'solid',   eyes: true },
+  { id: 'neon-white',  name: 'Ghost',       body: '#e0e0e0', accent: '#ffffff', pattern: 'solid',   eyes: true },
+];
+
+export const SKINS_CREATURES: Skin[] = [
+  { id: 'tiger',   name: 'Tiger',    body: '#ff8c00', accent: '#3a1a00', pattern: 'stripes', eyes: true, ears: true },
+  { id: 'cobra',   name: 'Cobra',    body: '#2e7d32', accent: '#c8e6c9', pattern: 'stripes', eyes: true },
+  { id: 'fire',    name: 'Blaze',    body: '#ff3d00', accent: '#ffab00', pattern: 'stripes', eyes: true, spikes: true },
+  { id: 'ice',     name: 'Frost',    body: '#4fc3f7', accent: '#e1f5fe', pattern: 'spots',   eyes: true },
+  { id: 'bee',     name: 'Buzz',     body: '#ffd600', accent: '#212121', pattern: 'stripes', eyes: true },
+  { id: 'coral',   name: 'Coral',    body: '#f06292', accent: '#f8bbd0', pattern: 'spots',   eyes: true },
+  { id: 'shadow',  name: 'Shadow',   body: '#37474f', accent: '#78909c', pattern: 'stripes', eyes: true },
+  { id: 'candy',   name: 'Candy',    body: '#e040fb', accent: '#ffffff', pattern: 'stripes', eyes: true },
+];
+
+export const ALL_SKINS = [...SKINS, ...SKINS_NEON, ...SKINS_CREATURES];
+
+export const getSkin = (id: string): Skin => ALL_SKINS.find((s) => s.id === id) ?? SKINS[0];
 
 /** Draw a snake back-to-front so the head sits on top. */
 export function drawSnake(

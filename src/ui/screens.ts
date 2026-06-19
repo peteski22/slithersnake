@@ -1,6 +1,7 @@
 import { DIFFICULTY_ORDER, type Difficulty } from '../config/difficulty';
 import { FOOD_MODE_ORDER, type FoodMode } from '../config/food-mode';
-import { SKINS, getSkin, drawSkinPreview } from '../skins/skins';
+import type { Theme } from '../config/theme';
+import { SKINS, SKINS_NEON, SKINS_CREATURES, getSkin, drawSkinPreview } from '../skins/skins';
 
 /** What the player chose on the game-over screen. */
 export type DeathChoice = 'respawn' | 'revive' | 'restart' | 'menu';
@@ -11,6 +12,7 @@ export interface StartChoices {
   skinId: string;
   difficulty: Difficulty;
   foodMode: FoodMode;
+  theme: Theme;
   mouseControl: boolean;
 }
 
@@ -22,9 +24,9 @@ export class Screens {
   constructor(private mount: HTMLElement) {}
 
   /** Show the start screen with pickers; resolves with the chosen options when Play is pressed. */
-  showStart(opts: { best: number; initial: StartChoices }): Promise<StartChoices> {
+  showStart(opts: { best: number; initial: StartChoices; onPreview?: (partial: Partial<StartChoices>) => void }): Promise<StartChoices> {
     return new Promise((resolve) => {
-      let { skinId, difficulty, foodMode } = opts.initial;
+      let { skinId, difficulty, foodMode, theme } = opts.initial;
       let activeTab: 'game' | 'snake' = 'game';
       this.mount.innerHTML = `
         <div class="screen">
@@ -50,13 +52,37 @@ export class Screens {
                 return `<button class="chip ${color}" data-food="${m}">${m}</button>`;
               }).join('')}
               </div>
+              <div class="start-label">Background</div>
+              <div class="start-row" id="start-theme">
+                <button class="chip" data-theme="classic">Light</button>
+                <button class="chip" data-theme="dark">Dark</button>
+              </div>
               <label class="start-toggle"><input type="checkbox" id="start-mouse" /> Mouse control (desktop)</label>
             </div>
             <div class="tab-pane" id="pane-snake" style="display:none">
+              <div class="start-label">Name</div>
               <input class="start-name" id="start-name" maxlength="14" placeholder="Your snake's name" aria-label="Snake name" />
-              <div class="start-label">Your snake</div>
-              <div class="start-row start-skins" id="start-skins">
-                ${SKINS.map((s) => `<button class="skin-btn" data-skin="${s.id}" title="${s.name}" aria-label="${s.name}"><canvas width="72" height="40"></canvas></button>`).join('')}
+              <div class="skin-section">
+                <div class="skin-tabs" id="skin-tabs">
+                  <button class="tab" data-skintab="friendly">Friendly</button>
+                  <button class="tab" data-skintab="neon">Neon</button>
+                  <button class="tab" data-skintab="creatures">Creatures</button>
+                </div>
+                <div class="skin-pane" id="skinpane-friendly">
+                  <div class="start-row start-skins">
+                    ${SKINS.map((s) => `<button class="skin-btn" data-skin="${s.id}" title="${s.name}" aria-label="${s.name}"><canvas width="72" height="40"></canvas></button>`).join('')}
+                  </div>
+                </div>
+                <div class="skin-pane" id="skinpane-neon" style="display:none">
+                  <div class="start-row start-skins">
+                    ${SKINS_NEON.map((s) => `<button class="skin-btn" data-skin="${s.id}" title="${s.name}" aria-label="${s.name}"><canvas width="72" height="40"></canvas></button>`).join('')}
+                  </div>
+                </div>
+                <div class="skin-pane" id="skinpane-creatures" style="display:none">
+                  <div class="start-row start-skins">
+                    ${SKINS_CREATURES.map((s) => `<button class="skin-btn" data-skin="${s.id}" title="${s.name}" aria-label="${s.name}"><canvas width="72" height="40"></canvas></button>`).join('')}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -66,7 +92,7 @@ export class Screens {
         </div>`;
 
       // Render a mini-snake preview into each skin button's canvas.
-      this.mount.querySelectorAll('#start-skins .skin-btn').forEach((btn) => {
+      this.mount.querySelectorAll('.start-skins .skin-btn').forEach((btn) => {
         const id = btn.getAttribute('data-skin');
         const cv = btn.querySelector('canvas') as HTMLCanvasElement | null;
         if (id && cv) drawSkinPreview(cv.getContext('2d')!, getSkin(id));
@@ -79,17 +105,33 @@ export class Screens {
       const paneGame = this.mount.querySelector('#pane-game') as HTMLElement;
       const paneSnake = this.mount.querySelector('#pane-snake') as HTMLElement;
 
+      let activeSkinTab = 'friendly';
+      const skinPanes = ['friendly', 'neon', 'creatures'];
+
       const syncTabs = () => {
         this.mount.querySelectorAll('[data-tab]').forEach((el) =>
           el.classList.toggle('selected', el.getAttribute('data-tab') === activeTab));
         paneGame.style.display = activeTab === 'game' ? '' : 'none';
         paneSnake.style.display = activeTab === 'snake' ? '' : 'none';
       };
+      const syncSkinTabs = () => {
+        this.mount.querySelectorAll('[data-skintab]').forEach((el) =>
+          el.classList.toggle('selected', el.getAttribute('data-skintab') === activeSkinTab));
+        for (const id of skinPanes) {
+          const pane = this.mount.querySelector(`#skinpane-${id}`) as HTMLElement;
+          if (pane) pane.style.display = id === activeSkinTab ? '' : 'none';
+        }
+      };
       syncTabs();
+      syncSkinTabs();
 
       this.mount.querySelector('#start-tabs')!.addEventListener('click', (e) => {
         const t = (e.target as HTMLElement).closest('[data-tab]')?.getAttribute('data-tab');
         if (t === 'game' || t === 'snake') { activeTab = t; syncTabs(); }
+      });
+      this.mount.querySelector('#skin-tabs')!.addEventListener('click', (e) => {
+        const t = (e.target as HTMLElement).closest('[data-skintab]')?.getAttribute('data-skintab');
+        if (t && skinPanes.includes(t)) { activeSkinTab = t; syncSkinTabs(); }
       });
 
       const sync = () => {
@@ -97,6 +139,8 @@ export class Screens {
           el.classList.toggle('selected', el.getAttribute('data-diff') === difficulty));
         this.mount.querySelectorAll('[data-food]').forEach((el) =>
           el.classList.toggle('selected', el.getAttribute('data-food') === foodMode));
+        this.mount.querySelectorAll('[data-theme]').forEach((el) =>
+          el.classList.toggle('selected', el.getAttribute('data-theme') === theme));
         this.mount.querySelectorAll('[data-skin]').forEach((el) =>
           el.classList.toggle('selected', el.getAttribute('data-skin') === skinId));
       };
@@ -108,12 +152,17 @@ export class Screens {
       });
       this.mount.querySelector('#start-food')!.addEventListener('click', (e) => {
         const f = (e.target as HTMLElement).closest('[data-food]')?.getAttribute('data-food');
-        if (f) { foodMode = f as FoodMode; sync(); }
+        if (f) { foodMode = f as FoodMode; sync(); opts.onPreview?.({ foodMode }); }
       });
-      this.mount.querySelector('#start-skins')!.addEventListener('click', (e) => {
-        const s = (e.target as HTMLElement).closest('[data-skin]')?.getAttribute('data-skin');
-        if (s) { skinId = s; sync(); }
+      this.mount.querySelector('#start-theme')!.addEventListener('click', (e) => {
+        const t = (e.target as HTMLElement).closest('[data-theme]')?.getAttribute('data-theme');
+        if (t === 'classic' || t === 'dark') { theme = t; sync(); opts.onPreview?.({ theme }); }
       });
+      this.mount.querySelectorAll('.start-skins').forEach((el) =>
+        el.addEventListener('click', (e) => {
+          const s = (e.target as HTMLElement).closest('[data-skin]')?.getAttribute('data-skin');
+          if (s) { skinId = s; sync(); }
+        }));
       this.mount.querySelector('#screen-play')!.addEventListener('click', () => {
         this.clear();
         resolve({
@@ -121,6 +170,7 @@ export class Screens {
           skinId,
           difficulty,
           foodMode,
+          theme,
           mouseControl: mouseEl.checked,
         });
       });

@@ -3,6 +3,7 @@ import type { GameState, InputState, Snake, World } from './types';
 import type { Difficulty, DifficultySettings } from '../config/difficulty';
 import { DIFFICULTIES } from '../config/difficulty';
 import type { FoodModeSettings } from '../config/food-mode';
+import { ALL_SKINS } from '../skins/skins';
 import { createSnake, stepSnake, snakeRadius } from './snake';
 import { tryEat, attractFood, burstFromSnake, fillFood, replenishFood, randomWorldPoint } from './food';
 import { headHitsSnake, headOutsideBorder } from './collision';
@@ -41,8 +42,6 @@ const BOT_NAMES = [
   'Rex', 'Biscuit', 'Sparkle', 'Zoom', 'Noodle', 'Fang', 'Pebble', 'Sunny',
   'Dash', 'Mango', 'Boots', 'Cosmo', 'Pixel', 'Ziggy', 'Coco', 'Tank',
 ];
-const SKIN_IDS = ['pink', 'blue', 'green', 'dragon', 'dog', 'rainbow', 'sun', 'mint'];
-
 export function createGame(
   difficulty: Difficulty,
   playerSkinId: string,
@@ -50,6 +49,7 @@ export function createGame(
   playerName = 'You',
   foodSettings?: FoodModeSettings,
 ): GameState {
+  const skinIds = ALL_SKINS.map((s) => s.id);
   const settings = DIFFICULTIES[difficulty];
   const state: GameState = {
     world: { width: WORLD_WIDTH, height: WORLD_HEIGHT },
@@ -71,7 +71,7 @@ export function createGame(
       id: `bot${i}`,
       name: BOT_NAMES[i % BOT_NAMES.length],
       isPlayer: false,
-      skinId: SKIN_IDS[i % SKIN_IDS.length],
+      skinId: skinIds[i % skinIds.length],
       pos,
       heading: rng() * Math.PI * 2,
       // Enemies are already in the arena at varied sizes (biased small) to bootstrap play.
